@@ -724,15 +724,54 @@ extension LineJoin: Castable, IntoValue, FromValue {
     }
 }
 
+// MARK: - Sized integers (upstream `signed_int!`/`unsigned_int!` casts)
+//
+// Each accepts only Typst `int` values; range errors surface in
+// `fromValue` ("number must be at least zero" / "number too large").
+
+/// Shared `castable` for the integer casts: any `int` value.
+func intCastable(_ value: Value) -> Bool {
+    if case .int = value { return true }
+    return false
+}
+
+extension Int32: Castable, IntoValue, FromValue {
+    public static var input: CastInfo { .type(Type.of(Int64.self)) }
+    public static var output: CastInfo { .type(Type.of(Int64.self)) }
+    public static func castable(_ value: Value) -> Bool { intCastable(value) }
+    public func intoValue() -> Value { .int(Int64(self)) }
+    public static func fromValue(_ value: Value) -> HintedStrResult<Self> {
+        guard case let .int(v) = value else { return .failure(error(value)) }
+        guard let i = Int32(exactly: v) else {
+            return .failure(HintedString("number too large"))
+        }
+        return .success(i)
+    }
+}
+
+extension UInt8: Castable, IntoValue, FromValue {
+    public static var input: CastInfo { .type(Type.of(Int64.self)) }
+    public static var output: CastInfo { .type(Type.of(Int64.self)) }
+    public static func castable(_ value: Value) -> Bool { intCastable(value) }
+    public func intoValue() -> Value { .int(Int64(self)) }
+    public static func fromValue(_ value: Value) -> HintedStrResult<Self> {
+        guard case let .int(v) = value else { return .failure(error(value)) }
+        guard v >= 0 else {
+            return .failure(HintedString("number must be at least zero"))
+        }
+        guard let u = UInt8(exactly: v) else {
+            return .failure(HintedString("number too large"))
+        }
+        return .success(u)
+    }
+}
+
 // MARK: - UInt64 (upstream `unsigned_int!` casts)
 
 extension UInt64: Castable, IntoValue, FromValue {
     public static var input: CastInfo { .type(Type.of(Int64.self)) }
     public static var output: CastInfo { .type(Type.of(Int64.self)) }
-    public static func castable(_ value: Value) -> Bool {
-        if case .int(let v) = value { return v >= 0 }
-        return false
-    }
+    public static func castable(_ value: Value) -> Bool { intCastable(value) }
     public func intoValue() -> Value { .int(Int64(self)) }
     public static func fromValue(_ value: Value) -> HintedStrResult<Self> {
         guard case .int(let v) = value else { return .failure(error(value)) }

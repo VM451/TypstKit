@@ -70,7 +70,9 @@ extension Symbol: NativeType {
 
 extension Version: NativeType {
     public static let typeInfo = TypeInfo(name: "version", longName: "version",
-        title: "Version", since: .version([0, 9, 0]))
+        title: "Version", since: .version([0, 9, 0]),
+        constructor: { Func(native: versionConstruct) },
+        scope: { versionScope() })
 }
 
 extension Str: NativeType {
@@ -92,12 +94,16 @@ extension Label: NativeType {
 
 extension Datetime: NativeType {
     public static let typeInfo = TypeInfo(name: "datetime", longName: "datetime",
-        title: "Datetime", since: .version([0, 5, 0]))
+        title: "Datetime", since: .version([0, 5, 0]),
+        constructor: { Func(native: datetimeConstruct) },
+        scope: { datetimeScope() })
 }
 
 extension Duration: NativeType {
     public static let typeInfo = TypeInfo(name: "duration", longName: "duration",
-        title: "Duration", since: .version([0, 8, 0]))
+        title: "Duration", since: .version([0, 8, 0]),
+        constructor: { Func(native: durationConstruct) },
+        scope: { durationScope() })
 }
 
 extension Content: NativeType {

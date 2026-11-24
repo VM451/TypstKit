@@ -28,7 +28,20 @@ struct MockWorld: World {
 
     func font(_ index: Int) -> Font? { nil }
 
-    func today(_ offset: Int) -> Datetime? { nil }
+    /// Fixed clock matching upstream's test world: 1970-01-01 12:00 UTC.
+    let clock: WorldTime = {
+        // Valid by construction.
+        if case let .success(t) = WorldTime.fixed(.datetime(TypstDateTime(
+            date: TypstDate(year: 1970, month: 1, day: 1)!,
+            time: TypstTime(hour: 12, minute: 0, second: 0)!))) {
+            return t
+        }
+        fatalError("invalid fixed clock")
+    }()
+
+    func today(_ offset: Duration?) -> Datetime? {
+        clock.today(offset)
+    }
 }
 
 /// Shared engine/context for direct function invocation.

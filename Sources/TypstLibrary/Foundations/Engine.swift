@@ -59,7 +59,10 @@ public protocol World: Sendable {
     func font(_ index: Int) -> Font?
 
     /// Today's date at the given UTC offset, if determinable.
-    func today(_ offset: Int) -> Datetime?
+    ///
+    /// The offset is a `Duration` (`nil` = auto: local time for the system
+    /// clock, UTC for fixed times). See `WorldTime::today`.
+    func today(_ offset: Duration?) -> Datetime?
 }
 
 /// The standard library: global scope plus module definitions.

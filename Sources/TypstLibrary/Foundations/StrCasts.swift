@@ -71,17 +71,16 @@ extension Unicode.Scalar: Castable, IntoValue, FromValue {
 extension UInt32: Castable, IntoValue, FromValue {
     public static var input: CastInfo { .type(Type.of(Int64.self)) }
     public static var output: CastInfo { .type(Type.of(Int64.self)) }
-    public static func castable(_ value: Value) -> Bool {
-        guard case .int(let v) = value else { return false }
-        return UInt32(exactly: v) != nil
-    }
-    public static func error(_ found: Value) -> HintedString {
-        input.error(found)
-    }
+    public static func castable(_ value: Value) -> Bool { intCastable(value) }
     public func intoValue() -> Value { .int(Int64(self)) }
     public static func fromValue(_ value: Value) -> HintedStrResult<Self> {
-        guard case .int(let v) = value, let u = UInt32(exactly: v) else {
-            return .failure(error(value))
+        // Upstream `unsigned_int!` (u32): range errors in `from_value`.
+        guard case let .int(v) = value else { return .failure(error(value)) }
+        guard v >= 0 else {
+            return .failure(HintedString("number must be at least zero"))
+        }
+        guard let u = UInt32(exactly: v) else {
+            return .failure(HintedString("number too large"))
         }
         return .success(u)
     }

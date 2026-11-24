@@ -178,17 +178,30 @@ public struct Version: Sendable, Hashable {
         self.components = components
     }
 
-    /// Three-way comparison, matching upstream `Ord` on the component list
-    /// (lexicographic; a shorter list that is a prefix compares smaller).
+    /// Three-way comparison matching upstream `Ord`: the component list is
+    /// semantically extended by zeros, so `version(1, 2)` equals
+    /// `version(1, 2, 0)`.
     public func cmp(_ other: Version) -> ComparisonResult {
-        for (a, b) in zip(components, other.components) where a != b {
-            return a < b ? .orderedAscending : .orderedDescending
-        }
-        if components.count != other.components.count {
-            return components.count < other.components.count
-                ? .orderedAscending : .orderedDescending
+        let maxLen = max(components.count, other.components.count)
+        for i in 0..<maxLen {
+            let a = i < components.count ? components[i] : 0
+            let b = i < other.components.count ? other.components[i] : 0
+            if a != b { return a < b ? .orderedAscending : .orderedDescending }
         }
         return .orderedSame
+    }
+
+    /// Upstream `PartialEq` delegates to `cmp` (zero-padded).
+    public static func == (lhs: Version, rhs: Version) -> Bool {
+        lhs.cmp(rhs) == .orderedSame
+    }
+
+    /// Hash the canonical form (trailing zeros stripped) so equal versions
+    /// hash equally.
+    public func hash(into hasher: inout Hasher) {
+        var end = components.count
+        while end > 0 && components[end - 1] == 0 { end -= 1 }
+        hasher.combine(components[..<end])
     }
 
     /// The named components addressable from Typst.

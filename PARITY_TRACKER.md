@@ -72,11 +72,17 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
 - [x] StyleChain / Styles
 - [ ] Foundations: ~~calc~~, ~~str~~ (scope: all 21 methods +
       constructor, 9 direct-call tests green), array, dict, type,
-      ~~assert~~, eval, ~~repr~~, ~~panic~~, version, bytes, label,
+      ~~assert~~, eval, ~~repr~~, ~~panic~~, ~~version~~, bytes, label,
       ~~regex~~ (constructor scope), json, yaml, toml, csv, xml,
-      cbor, plugin, datetime, duration, float, int, bool, none, auto
-      (eval/plugin/target/sys + array/dict callback methods deferred
+      cbor, plugin, ~~datetime~~, ~~duration~~, float, int, bool, none,
+      auto (eval/plugin/target/sys + array/dict callback methods deferred
       to eval and loading milestones)
+      — datetime/duration/version scopes + time-crate format engine
+      ported (construct/today/display/accessors, unit methods, variadic
+      version + at/fields); World.today now takes `Duration?` and
+      `WorldTime` (fixed/system clock) ported from typst-kit; Version
+      `Ord` zero-padding fixed; fields.rs ported (length/rel/stroke/
+      align field access); 49 direct-call tests green
 - [ ] loading: data formats, packages, fonts
 - [ ] model: document/page/par/text/table/grid/list/enum/terms/
       heading/figure/equation/outlines/notes/bibliography/cite/

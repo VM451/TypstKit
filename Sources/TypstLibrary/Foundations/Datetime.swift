@@ -7,6 +7,8 @@ public struct TypstDate: Sendable, Hashable, Comparable {
     public var day: Int     // 1-31
 
     public init?(year: Int, month: Int, day: Int) {
+        // `time::Date` is bounded to ±9999 years (no `large-dates` feature).
+        guard year >= -9999, year <= 9999 else { return nil }
         guard (1...12).contains(month), (1...31).contains(day) else { return nil }
         guard day <= Self.daysInMonth(year: year, month: month) else { return nil }
         self.year = year; self.month = month; self.day = day
@@ -14,6 +16,12 @@ public struct TypstDate: Sendable, Hashable, Comparable {
 
     /// Days since 1970-01-01 (Howard Hinnant's algorithm).
     public var daysSinceEpoch: Int {
+        Self.daysFromCivil(year, month, day)
+    }
+
+    /// Days from civil date — works for any year (unlike `init?`, which
+    /// enforces the `time::Date` ±9999 bound).
+    static func daysFromCivil(_ year: Int, _ month: Int, _ day: Int) -> Int {
         var y = year, m = month
         y -= m <= 2 ? 1 : 0
         let era = (y >= 0 ? y : y - 399) / 400
@@ -176,58 +184,6 @@ public enum Datetime: Sendable, Hashable {
                       case .date: return nil }
     }
 
-    /// Display with a pattern like "[year]-[month]-[day] [hour]:[minute]".
-    /// Supports [year] [month] [day] [hour] [minute] [second] [weekday] [ordinal].
-    public func display(_ pattern: String) -> String {
-        var out = ""
-        var i = pattern.startIndex
-        while i < pattern.endIndex {
-            if pattern[i] == "[" {
-                if let close = pattern[i...].firstIndex(of: "]") {
-                    let key = String(pattern[pattern.index(after: i)..<close])
-                    out += componentString(key) ?? "[\(key)]"
-                    i = pattern.index(after: close)
-                    continue
-                }
-            }
-            out.append(pattern[i])
-            i = pattern.index(after: i)
-        }
-        return out
-    }
-
-    func componentString(_ key: String) -> String? {
-        func pad(_ v: Int?, _ width: Int) -> String? {
-            v.map { String(format: "%0\(width)d", $0) }
-        }
-        switch key {
-        case "year": return year.map(String.init)
-        case "month": return pad(month, 2)
-        case "day": return pad(day, 2)
-        case "hour": return pad(hour, 2)
-        case "minute": return pad(minute, 2)
-        case "second": return pad(second, 2)
-        case "weekday": return weekday.map { ["", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][$0] }
-        case "ordinal": return ordinal.map(String.init)
-        default: return nil
-        }
-    }
-
-    /// Display using a named pattern.
-    public func displayNamed(_ name: String) -> StrResult<String> {
-        switch name {
-        case "year": return .success(display("[year]"))
-        case "month": return .success(display("[month]"))
-        case "day": return .success(display("[day]"))
-        case "hour": return .success(display("[hour]"))
-        case "minute": return .success(display("[minute]"))
-        case "second": return .success(display("[second]"))
-        case "weekday": return .success(display("[weekday]"))
-        case "ordinal": return .success(display("[ordinal]"))
-        default: return .failure(StrError("unknown datetime display pattern: \(name.typstRepr)"))
-        }
-    }
-
     /// Three-way comparison (only same-kind pairs are comparable,
     /// matching upstream `PartialOrd for Datetime`).
     /// Returns `nil` for mixed kinds.
@@ -246,34 +202,52 @@ public enum Datetime: Sendable, Hashable {
 
 extension Datetime {
     /// Add a duration.
+    ///
+    /// Port of `Add<Duration> for Datetime`: date-only values promote to
+    /// `datetime` when the result has a non-midnight time and collapse back
+    /// at midnight; times wrap modulo 24 hours.
     public func adding(_ duration: Duration) -> StrResult<Datetime> {
-        let secs = duration.seconds
+        let offset = duration.seconds
         switch self {
         case let .time(t):
-            let total = t.secondsSinceMidnight + secs
-            let dayDelta = Int((total / 86400).rounded(.down))
-            let sod = total - Double(dayDelta) * 86400
-            guard sod >= 0, let nt = TypstTime(
-                hour: Int(sod / 3600),
-                minute: Int((sod.truncatingRemainder(dividingBy: 3600)) / 60),
-                second: Int(sod.truncatingRemainder(dividingBy: 60)),
-                nanosecond: Int((sod.truncatingRemainder(dividingBy: 1)) * 1e9)
-            ) else { return .failure(StrError("time out of range")) }
+            // `time::Time + Duration` wraps modulo 24h.
+            let sod = floorMod(t.secondsSinceMidnight + offset, 86400)
+            guard let nt = timeFromSecondsOfDay(sod) else {
+                return .failure(StrError("time out of range"))
+            }
             return .success(.time(nt))
-        case let .date(d):
-            guard let nd = dateByAddingDays(d, days: Int((secs / 86400).rounded(.towardZero))) else {
+        case .date, .datetime:
+            // `PrimitiveDateTime ± Duration` on the combined instant.
+            let base: Double
+            switch self {
+            case let .date(d):
+                base = Double(d.daysSinceEpoch) * 86400
+            case let .datetime(dt):
+                base = Double(dt.date.daysSinceEpoch) * 86400
+                    + dt.time.secondsSinceMidnight
+            case .time:
+                fatalError("unreachable")
+            }
+            let total = base + offset
+            var dayIndex = (total / 86400).rounded(.down)
+            var sod = total - dayIndex * 86400
+            if sod >= 86400 { sod -= 86400; dayIndex += 1 }
+            guard let days = Int(exactly: dayIndex) else {
                 return .failure(StrError("date out of range"))
             }
-            return .success(.date(nd))
-        case let .datetime(dt):
-            // Promote to day math on the date part.
-            let dayDelta = Int((secs / 86400).rounded(.towardZero))
-            let rem = secs - Double(dayDelta) * 86400
-            guard let nd = dateByAddingDays(dt.date, days: dayDelta),
-                  let nt = timeByAddingSeconds(dt.time, seconds: rem) else {
-                return .failure(StrError("datetime out of range"))
+            let date = TypstDate(daysSinceEpoch: days)
+            // Upstream `PrimitiveDateTime` arithmetic panics outside the
+            // `time::Date` range (±9999 years); surface it as an error.
+            guard date.year >= -9999, date.year <= 9999 else {
+                return .failure(StrError("date out of range"))
             }
-            return .success(.datetime(TypstDateTime(date: nd, time: nt)))
+            guard let time = timeFromSecondsOfDay(sod) else {
+                return .failure(StrError("time out of range"))
+            }
+            if case .date = self, sod == 0 {
+                return .success(.date(date))
+            }
+            return .success(.datetime(TypstDateTime(date: date, time: time)))
         }
     }
 
@@ -298,20 +272,28 @@ extension Datetime {
         }
     }
 
-    private func dateByAddingDays(_ d: TypstDate, days: Int) -> TypstDate? {
-        TypstDate(daysSinceEpoch: d.daysSinceEpoch + days)
-    }
+}
 
-    private func timeByAddingSeconds(_ t: TypstTime, seconds: Double) -> TypstTime? {
-        let total = t.secondsSinceMidnight + seconds
-        guard total >= 0, total < 86400 else { return nil }
-        return TypstTime(
-            hour: Int(total / 3600),
-            minute: Int(total.truncatingRemainder(dividingBy: 3600) / 60),
-            second: Int(total.truncatingRemainder(dividingBy: 60)),
-            nanosecond: Int(total.truncatingRemainder(dividingBy: 1) * 1e9)
-        )
-    }
+/// Euclidean modulo for `Double` (`x - m * floor(x / m)`).
+private func floorMod(_ x: Double, _ m: Double) -> Double {
+    x - m * (x / m).rounded(.down)
+}
+
+/// Split seconds-since-midnight into a `TypstTime`, rounding to
+/// nanoseconds. `sod` must be in `[0, 86400)`.
+private func timeFromSecondsOfDay(_ sod: Double) -> TypstTime? {
+    guard sod.isFinite, sod >= 0, sod < 86400 else { return nil }
+    // Work in integer nanoseconds — `sod * 1e9` stays exact for any
+    // representable input below ~9e15.
+    let totalNanos = Int64((sod * 1e9).rounded())
+    let secs = totalNanos / 1_000_000_000
+    let nanos = Int(totalNanos % 1_000_000_000)
+    guard secs < 86_400 else { return nil }
+    return TypstTime(
+        hour: Int(secs / 3600),
+        minute: Int((secs / 60) % 60),
+        second: Int(secs % 60),
+        nanosecond: nanos)
 }
 
 extension Datetime: Comparable {
@@ -350,4 +332,132 @@ extension Datetime: Repr {
 
 extension Datetime: CustomDebugStringConvertible {
     public var debugDescription: String { repr() }
+}
+
+// MARK: - WorldTime (port of `typst_kit::datetime::Time`)
+
+/// The current date and time source for `World::today`.
+///
+/// Port of `Time`/`TimeInner` in `typst-kit/src/datetime.rs`: either a
+/// fixed instant (reproducible builds) or the system clock (memoized).
+public struct WorldTime: Sendable {
+    private enum Inner: Sendable {
+        /// A fixed UTC instant.
+        case fixed(Date)
+        /// The system clock, memoized like upstream's `OnceLock`.
+        case system(SystemClock)
+    }
+
+    /// Memoized system time (upstream `OnceLock<DateTime<Utc>>`).
+    private final class SystemClock: @unchecked Sendable {
+        private var cached: Date?
+        private let lock = NSLock()
+
+        func now() -> Date {
+            lock.lock()
+            defer { lock.unlock() }
+            if let cached { return cached }
+            let now = Date()
+            cached = now
+            return now
+        }
+
+        func reset() {
+            lock.lock()
+            cached = nil
+            lock.unlock()
+        }
+    }
+
+    private let inner: Inner
+
+    private init(_ inner: Inner) { self.inner = inner }
+
+    /// Use a predefined fixed date and time. Errors if `datetime` is
+    /// time-only, like upstream `Time::fixed`.
+    public static func fixed(_ datetime: Datetime) -> StrResult<WorldTime> {
+        let date: TypstDate
+        var sod = 0.0
+        switch datetime {
+        case let .date(d):
+            date = d
+        case let .datetime(dt):
+            date = dt.date
+            sod = dt.time.secondsSinceMidnight
+        case .time:
+            return .failure(StrError("fixed datetime must specify a date"))
+        }
+        guard date.year >= -9999, date.year <= 9999 else {
+            return .failure(StrError("provided fixed date is invalid"))
+        }
+        let instant = Double(date.daysSinceEpoch) * 86400 + sod
+        return .success(WorldTime(.fixed(Date(timeIntervalSince1970: instant))))
+    }
+
+    /// Use a fixed unix timestamp (e.g. `SOURCE_DATE_EPOCH`).
+    ///
+    /// Errors outside chrono's `DateTime` range (years ±262143).
+    public static func fixedTimestamp(_ timestamp: Int64) -> StrResult<WorldTime> {
+        // `DateTime::from_timestamp` accepts NaiveDateTime's full range
+        // (years -262144...=262143); bound by the corresponding instants.
+        let minDay = TypstDate.daysFromCivil(-262144, 1, 1)
+        let maxDay = TypstDate.daysFromCivil(262143, 12, 31)
+        guard timestamp >= Int64(minDay) * 86400,
+              timestamp <= Int64(maxDay) * 86400 + 86_399
+        else {
+            return .failure(StrError("timestamp is out of range"))
+        }
+        return .success(WorldTime(.fixed(
+            Date(timeIntervalSince1970: Double(timestamp)))))
+    }
+
+    /// Rely on the system clock.
+    public static func system() -> WorldTime {
+        WorldTime(.system(SystemClock()))
+    }
+
+    /// The current date, optionally shifted by a UTC offset.
+    ///
+    /// Returns only the date (like upstream). `nil` when the offset is
+    /// non-finite or outside the ±24h range `FixedOffset` accepts.
+    public func today(_ offset: Duration?) -> Datetime? {
+        // UTC seconds of "now", plus the offset the date is read in when
+        // no explicit offset is given (local time for the system clock,
+        // UTC for a fixed instant).
+        let utcSeconds: Double
+        var displayOffset = 0.0
+        switch inner {
+        case let .fixed(date):
+            utcSeconds = date.timeIntervalSince1970
+        case let .system(clock):
+            let now = clock.now()
+            utcSeconds = now.timeIntervalSince1970
+            if offset == nil {
+                displayOffset = Double(
+                    TimeZone.current.secondsFromGMT(for: now))
+            }
+        }
+
+        var seconds = utcSeconds + displayOffset
+        if let offset {
+            // `offset.seconds().trunc()` then i32 range + `east_opt`
+            // (|offset| < 24h strictly).
+            let raw = offset.seconds.rounded(.towardZero)
+            guard raw.isFinite,
+                  raw >= Double(Int32.min), raw <= Double(Int32.max)
+            else { return nil }
+            let shifted = Int32(raw)
+            guard abs(shifted) < 86_400 else { return nil }
+            seconds += Double(shifted)
+        }
+
+        let days = (seconds / 86400).rounded(.down)
+        guard let dayIndex = Int(exactly: days) else { return nil }
+        return .date(TypstDate(daysSinceEpoch: dayIndex))
+    }
+
+    /// Reset the memoized system time (between compilations).
+    public func reset() {
+        if case let .system(clock) = inner { clock.reset() }
+    }
 }
