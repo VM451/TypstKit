@@ -146,7 +146,9 @@ extension Func: NativeType {
 
 extension Args: NativeType {
     public static let typeInfo = TypeInfo(name: "arguments", longName: "arguments",
-        title: "Arguments", since: .forever)
+        title: "Arguments", since: .version([0, 10, 0]),
+        constructor: { Func(native: argsConstruct) },
+        scope: { argsScope() })
 }
 
 extension Type: NativeType {
