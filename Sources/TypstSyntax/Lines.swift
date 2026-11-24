@@ -4,7 +4,7 @@ import Foundation
 /// Port of `typst-syntax/src/lines.rs`.
 ///
 /// This is internally reference-counted and thus cheap to clone.
-final class Lines: @unchecked Sendable {
+public final class Lines: @unchecked Sendable {
     var inner: Inner
 
     final class Inner {
@@ -21,24 +21,31 @@ final class Lines: @unchecked Sendable {
         self.inner = Inner(lines: Lines.computeLines(text), text: text)
     }
 
+    /// An independent copy for copy-on-write.
+    func copy() -> Lines {
+        let copied = Lines(text: "")
+        copied.inner = Inner(lines: inner.lines, text: inner.text)
+        return copied
+    }
+
     /// The text as a string.
-    var text: String { inner.text }
+    public var text: String { inner.text }
 
     /// The length of the file in UTF-8 encoded bytes.
-    var lenBytes: Int { inner.text.utf8.count }
+    public var lenBytes: Int { inner.text.utf8.count }
 
     /// The length of the file in UTF-16 code units.
-    var lenUtf16: Int {
+    public var lenUtf16: Int {
         let last = inner.lines[inner.lines.count - 1]
         let tail = byteSlice(last.byteIdx..<inner.text.utf8.count) ?? ""
         return last.utf16Idx + Lines.lenUtf16(tail)
     }
 
     /// The length of the file in lines.
-    var lenLines: Int { inner.lines.count }
+    public var lenLines: Int { inner.lines.count }
 
     /// Return the index of the UTF-16 code unit at the byte index.
-    func byteToUtf16(_ byteIdx: Int) -> Int? {
+    public func byteToUtf16(_ byteIdx: Int) -> Int? {
         guard let lineIdx = byteToLine(byteIdx),
               lineIdx < inner.lines.count else { return nil }
         let line = inner.lines[lineIdx]
@@ -47,7 +54,7 @@ final class Lines: @unchecked Sendable {
     }
 
     /// Return the index of the line that contains the given byte index.
-    func byteToLine(_ byteIdx: Int) -> Int? {
+    public func byteToLine(_ byteIdx: Int) -> Int? {
         guard byteIdx >= 0, byteIdx <= inner.text.utf8.count else { return nil }
         // Binary search for the last line starting at or before byteIdx.
         var lo = 0
@@ -67,7 +74,7 @@ final class Lines: @unchecked Sendable {
     ///
     /// The column is defined as the number of characters in the line before
     /// the byte index.
-    func byteToColumn(_ byteIdx: Int) -> Int? {
+    public func byteToColumn(_ byteIdx: Int) -> Int? {
         guard let line = byteToLine(byteIdx),
               let start = lineToByte(line),
               let head = byteSlice(start..<byteIdx) else { return nil }
@@ -75,7 +82,7 @@ final class Lines: @unchecked Sendable {
     }
 
     /// Return the index of the line and column at the byte index.
-    func byteToLineColumn(_ byteIdx: Int) -> (line: Int, column: Int)? {
+    public func byteToLineColumn(_ byteIdx: Int) -> (line: Int, column: Int)? {
         guard let line = byteToLine(byteIdx),
               let start = lineToByte(line),
               let head = byteSlice(start..<byteIdx) else { return nil }
@@ -83,7 +90,7 @@ final class Lines: @unchecked Sendable {
     }
 
     /// Return the byte index at the UTF-16 code unit.
-    func utf16ToByte(_ utf16Idx: Int) -> Int? {
+    public func utf16ToByte(_ utf16Idx: Int) -> Int? {
         guard utf16Idx >= 0 else { return nil }
         let bytes = Array(inner.text.utf8)
         // Find the last line whose utf16 start is <= utf16Idx.
@@ -115,13 +122,13 @@ final class Lines: @unchecked Sendable {
     }
 
     /// Return the byte position at which the given line starts.
-    func lineToByte(_ lineIdx: Int) -> Int? {
+    public func lineToByte(_ lineIdx: Int) -> Int? {
         guard lineIdx < inner.lines.count else { return nil }
         return inner.lines[lineIdx].byteIdx
     }
 
     /// Return the range which encloses the given line.
-    func lineToRange(_ lineIdx: Int) -> Range<Int>? {
+    public func lineToRange(_ lineIdx: Int) -> Range<Int>? {
         guard let start = lineToByte(lineIdx) else { return nil }
         let end = lineToByte(lineIdx + 1) ?? inner.text.utf8.count
         return start..<end
@@ -132,7 +139,7 @@ final class Lines: @unchecked Sendable {
     ///
     /// The column defines the number of characters to go beyond the start of
     /// the line.
-    func lineColumnToByte(lineIdx: Int, columnIdx: Int) -> Int? {
+    public func lineColumnToByte(lineIdx: Int, columnIdx: Int) -> Int? {
         guard columnIdx >= 0,
               let range = lineToRange(lineIdx),
               let line = byteSlice(range) else { return nil }
