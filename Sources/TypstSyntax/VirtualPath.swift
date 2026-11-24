@@ -38,32 +38,64 @@ extension PackageSpec: ExpressibleByStringLiteral {
 
 extension PackageSpec {
     /// Parse `@namespace/name:major.minor.patch`.
+    ///
+    /// Port of upstream `FromStr for PackageSpec`.
     public static func parse(_ s: String) throws -> PackageSpec {
-        var rest = s
-        guard rest.hasPrefix("@") else {
-            throw PathError.message("package specification must start with '@'")
-        }
-        rest.removeFirst()
-        guard let slash = rest.firstIndex(of: "/") else {
-            throw PathError.message("package specification is missing '/' after namespace")
-        }
-        let namespace = String(rest[..<slash])
-        rest = String(rest[rest.index(after: slash)...])
-        guard let colon = rest.firstIndex(of: ":") else {
-            throw PathError.message("package specification is missing ':' before version")
-        }
-        let name = String(rest[..<colon])
-        let version = try PackageVersion.parse(String(rest[rest.index(after: colon)...]))
-        guard isValidPackagePart(namespace), isValidPackagePart(name) else {
-            throw PathError.message("invalid package namespace or name")
-        }
+        var scanner = Scanner(s)
+        let namespace = try parseNamespace(&scanner)
+        let name = try parseName(&scanner)
+        let version = try parseVersion(&scanner)
         return PackageSpec(namespace: namespace, name: name, version: version)
     }
 
-    static func isValidPackagePart(_ s: String) -> Bool {
-        !s.isEmpty && s.allSatisfy {
-            $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "-" || $0 == "_")
+    fileprivate static func parseNamespace(_ s: inout Scanner) throws -> String {
+        guard s.eatIf("@") else {
+            throw PathError.message("package specification must start with '@'")
         }
+        let namespace = s.eatUntil { $0 == "/" }
+        if namespace.isEmpty {
+            throw PathError.message("package specification is missing namespace")
+        } else if !isIdent(namespace) {
+            throw PathError.message(
+                "`\(namespace)` is not a valid package namespace")
+        }
+        return namespace
+    }
+
+    fileprivate static func parseName(_ s: inout Scanner) throws -> String {
+        _ = s.eatIf("/")
+        let name = s.eatUntil { $0 == ":" }
+        if name.isEmpty {
+            throw PathError.message("package specification is missing name")
+        } else if !isIdent(name) {
+            throw PathError.message("`\(name)` is not a valid package name")
+        }
+        return name
+    }
+
+    fileprivate static func parseVersion(_ s: inout Scanner) throws -> PackageVersion {
+        _ = s.eatIf(":")
+        let version = s.after
+        if version.isEmpty {
+            throw PathError.message("package specification is missing version")
+        }
+        return try PackageVersion.parse(version)
+    }
+}
+
+extension VersionlessPackageSpec {
+    /// Parse `@namespace/name` (without a version).
+    ///
+    /// Port of upstream `FromStr for VersionlessPackageSpec`.
+    public static func parse(_ s: String) throws -> VersionlessPackageSpec {
+        var scanner = Scanner(s)
+        let namespace = try PackageSpec.parseNamespace(&scanner)
+        let name = try PackageSpec.parseName(&scanner)
+        if !scanner.done {
+            throw PathError.message(
+                "unexpected version in versionless package specification")
+        }
+        return VersionlessPackageSpec(namespace: namespace, name: name)
     }
 }
 
@@ -97,16 +129,39 @@ public struct PackageVersion: Hashable, Sendable, Comparable, CustomStringConver
         self.patch = patch
     }
 
+    /// Parse `major.minor.patch`.
+    ///
+    /// Port of upstream `FromStr for PackageVersion`.
     public static func parse(_ s: String) throws -> PackageVersion {
-        let parts = s.split(separator: ".", omittingEmptySubsequences: false)
-        guard parts.count == 3,
-              let major = UInt32(parts[0]),
-              let minor = UInt32(parts[1]),
-              let patch = UInt32(parts[2]),
-              parts.allSatisfy({ !$0.isEmpty }) else {
-            throw PathError.message("invalid package version '\(s)'")
+        var parts = s.split(separator: ".", omittingEmptySubsequences: false)
+            .makeIterator()
+        func next(_ kind: String) throws -> UInt32 {
+            guard let part = parts.next(), !part.isEmpty else {
+                throw PathError.message(
+                    "version number is missing \(kind) version")
+            }
+            guard let value = UInt32(part) else {
+                throw PathError.message(
+                    "`\(part)` is not a valid \(kind) version")
+            }
+            return value
+        }
+        let major = try next("major")
+        let minor = try next("minor")
+        let patch = try next("patch")
+        if let rest = parts.next() {
+            throw PathError.message(
+                "version number has unexpected fourth component: `\(rest)`")
         }
         return PackageVersion(major: major, minor: minor, patch: patch)
+    }
+
+    /// The current compiler version.
+    ///
+    /// Mirrors upstream `PackageVersion::compiler`, which reads the running
+    /// Typst version. This engine implements Typst 0.15.1.
+    public static func compiler() -> PackageVersion {
+        PackageVersion(major: 0, minor: 15, patch: 1)
     }
 
     public static func < (a: PackageVersion, b: PackageVersion) -> Bool {
@@ -118,7 +173,7 @@ public struct PackageVersion: Hashable, Sendable, Comparable, CustomStringConver
 
 /// A version bound used in package manifests (`major`, `major.minor`,
 /// `major.minor.patch`).
-public struct VersionBound: Hashable, Sendable {
+public struct VersionBound: Hashable, Sendable, CustomStringConvertible {
     public var major: UInt32
     public var minor: UInt32?
     public var patch: UInt32?
@@ -127,6 +182,44 @@ public struct VersionBound: Hashable, Sendable {
         self.major = major
         self.minor = minor
         self.patch = patch
+    }
+
+    /// Parse a version bound: `major`, `major.minor`, or
+    /// `major.minor.patch`.
+    ///
+    /// Port of upstream `FromStr for VersionBound`.
+    public static func parse(_ s: String) throws -> VersionBound {
+        // Rust's `split` yields one empty item for an empty string; Swift's
+        // yields none, so emulate that to match upstream error behavior.
+        var parts = s.split(separator: ".", omittingEmptySubsequences: false)
+            .map(String.init)
+        if parts.isEmpty { parts = [""] }
+        var it = parts.makeIterator()
+        func next(_ kind: String) throws -> UInt32? {
+            guard let part = it.next() else { return nil }
+            guard let value = UInt32(part) else {
+                throw PathError.message(
+                    "`\(part)` is not a valid \(kind) version bound")
+            }
+            return value
+        }
+        guard let major = try next("major") else {
+            throw PathError.message("version bound is missing major version")
+        }
+        let minor = try next("minor")
+        let patch = try next("patch")
+        if let rest = it.next() {
+            throw PathError.message(
+                "version bound has unexpected fourth component: `\(rest)`")
+        }
+        return VersionBound(major: major, minor: minor, patch: patch)
+    }
+
+    public var description: String {
+        var result = "\(major)"
+        if let minor { result += ".\(minor)" }
+        if let patch { result += ".\(patch)" }
+        return result
     }
 }
 

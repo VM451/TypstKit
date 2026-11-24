@@ -48,8 +48,8 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
 - [x] Reparser (reparser.rs: incremental reparse, tryReparseAndRenumber,
       markup/block expr reparsing, delimiter-balance + warning-safety
       checks, exponential renumbering)
-- [ ] package.rs remainder (PackageInfo, manifest parsing)
-- [ ] highlight.rs (IDE tags)
+- [x] package.rs remainder (PackageManifest/PackageInfo/TemplateInfo/ToolInfo/TomlValue model + validate; TOML decode deferred to TypstLibrary)
+- [x] highlight.rs (HighlightTag, highlight(), highlightHTML; upstream test ported)
 - [ ] Gate: upstream tests/suite/syntax ports pass
 
 ## Phase 2 — TypstLibrary & TypstEval
