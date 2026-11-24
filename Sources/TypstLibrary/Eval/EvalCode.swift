@@ -123,8 +123,10 @@ extension Expr {
             throw evalNotImplemented(span, "set/show rules outside code blocks")
         case .funcCall(let v): value = try v.eval(&vm)
         case .closure(let v): value = try v.eval(&vm)
-        case .contextual, .moduleImport, .moduleInclude:
-            throw evalNotImplemented(span, "this expression")
+        case .moduleImport(let v): value = try v.eval(&vm)
+        case .moduleInclude(let v): value = .content(try v.eval(&vm))
+        case .contextual:
+            throw evalNotImplemented(span, "context expression")
         // Math nodes — ported in EvalMath.swift.
         case .equation(let v): value = .content(try v.eval(&vm))
         case .math(let v): value = .content(try v.eval(&vm))

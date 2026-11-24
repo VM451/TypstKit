@@ -11,18 +11,26 @@ struct MockWorld: World {
     let main: FileId
     /// In-memory files for data-loading tests, keyed by interned `FileId`.
     var files: [FileId: Bytes] = [:]
+    /// In-memory source texts for import/eval tests, keyed by interned
+    /// `FileId` (`Source` is not `Sendable`, so texts are stored).
+    var sourceTexts: [FileId: String] = [:]
 
-    init(files: [FileId: Bytes] = [:]) {
+    init(files: [FileId: Bytes] = [:],
+         sources: [FileId: String] = [:]) {
         var scope = Scope()
         defineFoundations(scope)
         self.library = LazyHash(Library(scope: scope))
         self.book = LazyHash(FontBook())
         self.main = FileId.newForTest("main.typ")
         self.files = files
+        self.sourceTexts = sources
     }
 
     func source(_ id: FileId) -> FileResult<Source> {
-        .failure(FileError("no source", kind: .notFound))
+        if let text = sourceTexts[id] {
+            return .success(Source(id: id, text: text))
+        }
+        return .failure(FileError("no source", kind: .notFound))
     }
 
     func file(_ id: FileId) -> FileResult<Bytes> {

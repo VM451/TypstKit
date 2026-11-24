@@ -204,6 +204,73 @@ struct EvalTests {
         }
     }
 
+    /// Evaluate a full source file into a module.
+    private func evalSource(_ text: String,
+                            files: [FileId: String] = [:]) throws -> Module {
+        let world = MockWorld(sources: files)
+        var engine = Engine(world: world)
+        let id = world.main
+        let source = Source(id: id, text: text)
+        return try evalModule(engine, source)
+    }
+
+    private func fileId(_ path: String) -> FileId {
+        FileId(path: RootedPath(
+            root: .project, vpath: (try? VirtualPath(path))!))
+    }
+
+    @Test func moduleEval() throws {
+        // Top-level bindings land in the module scope; markup becomes
+        // the module content.
+        let module = try evalSource("#let answer = 42\nHello")
+        #expect(module.scope.get("answer") != nil)
+        #expect(module.content.elem.name == "sequence")
+
+        // Syntax errors surface as diagnostics.
+        #expect(throws: (any Error).self) {
+            _ = try evalSource("#let =")
+        }
+
+        // Top-level break is forbidden at the entry point.
+        #expect(throws: (any Error).self) {
+            _ = try evalSource("#break")
+        }
+    }
+
+    @Test func imports() throws {
+        // `import "foo.typ"` binds the file stem; wildcard and item
+        // imports pull from the module scope.
+        let fooId = fileId("/foo.typ")
+        let world = MockWorld(sources: [
+            fooId: "#let x = 1\n#let y = 2"])
+        var engine = Engine(world: world)
+        let mainId = world.main
+        let source = Source(id: mainId, text: "#import \"foo.typ\": x")
+        let module = try evalModule(engine, source)
+        #expect(module.scope.get("x") != nil)
+        #expect(module.scope.get("foo") == nil)
+
+        // Bare import binds the file stem.
+        let bare = Source(id: mainId, text: "#import \"foo.typ\"")
+        let bareModule = try evalModule(engine, bare)
+        #expect(bareModule.scope.get("foo") != nil)
+
+        // include evaluates the file's markup as content.
+        let chapId = fileId("/chap.typ")
+        let world2 = MockWorld(sources: [chapId: "Chapter text"])
+        var engine2 = Engine(world: world2)
+        let incl = Source(id: world2.main, text: "#include \"chap.typ\"")
+        let inclModule = try evalModule(engine2, incl)
+        // Single-child sequences unwrap to the child ("Chapter text" → text).
+        #expect(inclModule.content.elem.name == "text")
+
+        // Missing file errors.
+        #expect(throws: (any Error).self) {
+            _ = try evalModule(engine2,
+                Source(id: world2.main, text: "#import \"nope.typ\""))
+        }
+    }
+
     @Test func errors() {
         #expect(throws: (any Error).self) { try eval("unknownvar") }
         #expect(throws: (any Error).self) { try eval("1 + \"a\"") }

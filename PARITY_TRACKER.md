@@ -204,5 +204,5 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
 - [x] `rules.rs` — set/show rule eval (`EvalRules.swift`)
 - [x] `markup.rs` — markup stream eval + leaf nodes (`EvalMarkup.swift`); list/enum/terms containers deferred to realization (upstream grouping rules)
 - [x] `math.rs` eval — all math nodes + `eval_math_call`/`unparse_math_args`/`MathArgs.eval` (`EvalMath.swift`); `Scopes.getInMath` aliases `get` until the math scope lands
-- [ ] `import.rs` — module import/include
-- [ ] `lib.rs` — public entry points (`eval`, `eval_closure` wiring, `CapturesVisitor` IDE API)
+- [x] `import.rs` — ModuleImport/ModuleInclude eval, file+package resolution, manifest parsing (`EvalImport.swift`)
+- [x] `lib.rs` — `evalModule`/`evalString` entry points, `SpanMode`, route file-id chain for cycle detection, `flow.forbidden()` at entry (`EvalEntry.swift`); `.contextual` expr eval deferred (needs ContextElem — realization milestone)

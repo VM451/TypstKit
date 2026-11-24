@@ -133,7 +133,19 @@ public final class Routines: @unchecked Sendable {
 /// Trace collector for `trace` points.
 public final class Traced: @unchecked Sendable {
     public private(set) var points: [EvalTracepoint] = []
+    /// Spans under inspection per file (upstream `Traced::inspect` map).
+    public private(set) var inspected: [FileId: Span] = [:]
     public func push(_ point: EvalTracepoint) { points.append(point) }
+
+    /// The span under inspection in the given file, if any.
+    /// Port of upstream `Traced::get`.
+    public func get(_ id: FileId) -> Span? { inspected[id] }
+
+    /// Mark a span as inspected.
+    /// Port of upstream `Traced::inspect`.
+    public func inspect(_ span: Span) {
+        if let id = span.id { inspected[id] = span }
+    }
 }
 
 /// A trace point emitted during evaluation.
@@ -158,7 +170,22 @@ public struct Route: Sendable {
     /// Port of upstream `Route::len` — incremented by `extend`.
     public private(set) var len: Int = 0
     public private(set) var calls: [CallInfo] = []
+    /// File ids in the route chain (upstream's linked `id`/`outer` chain,
+    /// flattened for cyclic import/eval detection).
+    public private(set) var ids: [FileId] = []
     public var isEmpty: Bool { calls.isEmpty }
+
+    /// Whether the given file id is part of the route.
+    /// Port of upstream `Route::contains`.
+    public func contains(_ id: FileId) -> Bool { ids.contains(id) }
+
+    /// Attach a file id to the route segment.
+    /// Port of upstream `Route::with_id`.
+    public func withId(_ id: FileId) -> Route {
+        var copy = self
+        copy.ids.append(id)
+        return copy
+    }
     public mutating func push(_ info: CallInfo) { calls.append(info) }
     public mutating func pop() { _ = calls.popLast() }
 

@@ -462,6 +462,13 @@ public struct Scopes {
         top = Scope()
     }
 
+    /// Push an existing scope as the new innermost scope.
+    /// Port of upstream `Scopes::scopes.push`.
+    public mutating func push(_ scope: Scope) {
+        stack.append(top)
+        top = scope
+    }
+
     /// Exit the topmost scope.
     public mutating func exit() {
         precondition(!stack.isEmpty, "no pushed scope")
