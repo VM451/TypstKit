@@ -38,3 +38,19 @@ public struct LocationKey: Sendable, Hashable {
         self.hash = location.hash
     }
 }
+
+extension Location: CustomDebugStringConvertible {
+    public var debugDescription: String { repr() }
+}
+
+extension Location: Repr {
+    public func repr() -> String { "location(..)" }
+}
+
+extension Location: NativeType {
+    public static let typeInfo = TypeInfo(name: "location", longName: "location",
+        title: "Location", since: .forever)
+}
+
+/// Locations are `#[ty]` values stored as `Value.dynamic`.
+extension Location: DynamicValue {}

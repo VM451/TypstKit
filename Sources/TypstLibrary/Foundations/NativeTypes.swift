@@ -117,7 +117,7 @@ extension Duration: NativeType {
 
 extension Content: NativeType {
     public static let typeInfo = TypeInfo(name: "content", longName: "content",
-        title: "Content", since: .forever)
+        title: "Content", since: .forever, scope: { contentScope() })
 }
 
 extension Styles: NativeType {

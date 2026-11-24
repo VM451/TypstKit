@@ -76,7 +76,9 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
       ~~bytes~~, ~~label~~, ~~regex~~ (constructor scope), json, yaml,
       toml, csv, xml, cbor, plugin, ~~datetime~~, ~~duration~~, ~~float~~,
       ~~int~~, ~~decimal~~, ~~type~~, ~~symbol~~ (constructor),
-      bool, none, auto (eval/plugin/target/sys deferred to eval
+      bool, none, auto; content methods (func/has/at/
+      fields/location); location value type (scope methods
+      deferred to introspection) (eval/plugin/target/sys deferred to eval
       and loading milestones)
       — datetime/duration/version scopes + time-crate format engine
       ported (construct/today/display/accessors, unit methods, variadic
