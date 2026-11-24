@@ -469,6 +469,8 @@ public struct Capabilities: OptionSet, Sendable, Hashable {
     public static let queriable = Capabilities(rawValue: 1 << 3)
     /// Appears in tagged PDF output.
     public static let tagged = Capabilities(rawValue: 1 << 4)
+    /// Cannot be labelled (upstream `Unlabellable` marker).
+    public static let unlabellable = Capabilities(rawValue: 1 << 5)
 }
 
 /// A field's metadata.

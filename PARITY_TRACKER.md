@@ -202,6 +202,7 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
 - [x] `flow.rs` — conditionals, loops, break/continue/return (`EvalFlow.swift`)
 - [x] `binding.rs` — let bindings + destructuring (`EvalBinding.swift`)
 - [x] `rules.rs` — set/show rule eval (`EvalRules.swift`)
-- [ ] `markup.rs`, `math.rs` eval
+- [x] `markup.rs` — markup stream eval + leaf nodes (`EvalMarkup.swift`); list/enum/terms containers deferred to realization (upstream grouping rules)
+- [ ] `math.rs` eval
 - [ ] `import.rs` — module import/include
 - [ ] `lib.rs` — public entry points (`eval`, `eval_closure` wiring, `CapturesVisitor` IDE API)

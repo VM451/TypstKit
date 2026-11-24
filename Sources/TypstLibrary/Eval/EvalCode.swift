@@ -100,6 +100,24 @@ extension Expr {
         case .loopBreak(let v): value = try v.eval(&vm)
         case .loopContinue(let v): value = try v.eval(&vm)
         case .funcReturn(let v): value = try v.eval(&vm)
+        // Markup nodes — ported in EvalMarkup.swift.
+        case .text(let v): value = .content(try v.eval(&vm))
+        case .space(let v): value = .content(try v.eval(&vm))
+        case .linebreak(let v): value = .content(try v.eval(&vm))
+        case .parbreak(let v): value = .content(try v.eval(&vm))
+        case .escape(let v): value = try v.eval(&vm)
+        case .shorthand(let v): value = try v.eval(&vm)
+        case .smartQuote(let v): value = .content(try v.eval(&vm))
+        case .strong(let v): value = .content(try v.eval(&vm))
+        case .emph(let v): value = .content(try v.eval(&vm))
+        case .raw(let v): value = .content(try v.eval(&vm))
+        case .link(let v): value = .content(try v.eval(&vm))
+        case .label(let v): value = try v.eval(&vm)
+        case .ref(let v): value = .content(try v.eval(&vm))
+        case .heading(let v): value = .content(try v.eval(&vm))
+        case .listItem(let v): value = .content(try v.eval(&vm))
+        case .enumItem(let v): value = .content(try v.eval(&vm))
+        case .termItem(let v): value = .content(try v.eval(&vm))
         // Pending ports — throw until their files land.
         case .setRule, .showRule:
             throw evalNotImplemented(span, "set/show rules outside code blocks")
@@ -444,8 +462,8 @@ func findBadDigits(base: NonDecimalBase,
 }
 
 
-/// Evaluate markup into content. Port of `Markup::eval` — the full
-/// markup evaluator lands in `EvalMarkup.swift`.
+/// Evaluate markup into content. Port of `eval_markup` entry —
+/// the stream evaluator lives in `EvalMarkup.swift`.
 func evalMarkup(_ vm: inout Vm, _ markup: Markup) throws -> Content {
-    throw evalNotImplemented(markup.span, "markup")
+    try markup.eval(&vm)
 }

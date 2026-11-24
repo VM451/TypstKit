@@ -119,6 +119,66 @@ struct EvalTests {
         #expect(try value("let a = (1,); a.push(2); a.len()") == .int(2))
     }
 
+    /// Evaluate markup source and return the resulting content.
+    private func markup(_ source: String) throws -> Content {
+        let node = parse(source)
+        guard let markup = node.cast(Markup.self) else {
+            throw SourceDiagnostics(SourceDiagnostic.error(
+                Span.detached, "test harness: expected markup"))
+        }
+        let world = MockWorld()
+        let engine = Engine(world: world)
+        var vm = Vm(
+            engine: engine,
+            context: Context(),
+            scopes: Scopes(base: world.library.value.scope),
+            inspected: nil)
+        return try markup.eval(&vm)
+    }
+
+    /// Element names of a (possibly sequenced) content value.
+    private func elemNames(_ content: Content) -> [String] {
+        if let seq = content.packed.element as? SequenceElem {
+            return seq.children.map { $0.elem.name }
+        }
+        return [content.elem.name]
+    }
+
+    @Test func markupEval() throws {
+        // Plain text produces a text element.
+        let text = try markup("Hello")
+        #expect(elemNames(text) == ["text"])
+
+        // Strong/emph produce their elements.
+        let styled = try markup("a *b* _c_")
+        #expect(styled.elem.name == "sequence")
+        if let seq = styled.packed.element as? SequenceElem {
+            #expect(seq.children.contains { $0.elem.name == "strong" })
+            #expect(seq.children.contains { $0.elem.name == "emph" })
+        }
+
+        // Space and parbreak.
+        let spaced = try markup("a  b\n\nc")
+        #expect(spaced.elem.name == "sequence")
+
+        // Heading.
+        let head = try markup("= Title")
+        #expect(head.elem.name == "heading")
+
+        // Label attaches to preceding content.
+        let labelled = try markup("Hi <lbl>")
+        if let seq = labelled.packed.element as? SequenceElem {
+            #expect(seq.children.contains {
+                $0.label?.resolved == "lbl" })
+        } else {
+            #expect(labelled.label?.resolved == "lbl")
+        }
+
+        // List items evaluate to item elements.
+        let item = try markup("- entry")
+        #expect(item.elem.name == "item")
+    }
+
     @Test func errors() {
         #expect(throws: (any Error).self) { try eval("unknownvar") }
         #expect(throws: (any Error).self) { try eval("1 + \"a\"") }
