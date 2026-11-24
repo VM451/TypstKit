@@ -167,7 +167,7 @@ private func radixDigit(_ ch: Character) -> Int? {
 }
 
 private func parseMagnitude(
-    _ s: String, radix: Int, limit: UInt64, negative: Bool = false
+    _ s: String, radix: Int, limit: UInt64
 ) -> Result<UInt64, IntParseError> {
     var digits = s[...]
     if digits.first == "+" { digits = digits.dropFirst() }
@@ -181,7 +181,7 @@ private func parseMagnitude(
         let (m1, o1) = result.multipliedReportingOverflow(by: UInt64(radix))
         let (m2, o2) = m1.addingReportingOverflow(UInt64(digit))
         if o1 || o2 || m2 > limit {
-            return .failure(negative ? .negOverflow : .posOverflow)
+            return .failure(.posOverflow)
         }
         result = m2
     }
@@ -239,10 +239,15 @@ let intConstruct = nativeFunc(
         }
 
         if negative {
-            switch parseMagnitude(text, radix: radix,
-                                  limit: UInt64(Int64.min.magnitude),
-                                  negative: true) {
+            // Upstream parses the magnitude as `u64` first (overflow →
+            // "too large"), then range-checks against `i64::MIN`'s
+            // magnitude (→ "too small").
+            switch parseMagnitude(text, radix: radix, limit: UInt64.max) {
             case .success(let mag):
+                guard mag <= UInt64(Int64.min.magnitude) else {
+                    throw intParseError(.negOverflow, base: baseValue,
+                                        span: value.span)
+                }
                 // `wrapping_neg` on the i64 bit pattern.
                 return Int64(bitPattern: (0 as UInt64) &- mag)
             case .failure(let kind):

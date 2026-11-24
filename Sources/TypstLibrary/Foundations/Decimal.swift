@@ -14,10 +14,10 @@ public struct Decimal: Sendable, Hashable {
 
     public static let ZERO = Decimal(Int64(0))
     public static let ONE = Decimal(Int64(1))
-    /// Bounds approximating upstream `rust_decimal::MIN`/`MAX`; Foundation
-    /// `Decimal` has a wider range, so these are conservative limits.
-    public static let MIN = Decimal.parseUnchecked("-1e-100")
-    public static let MAX = Decimal.parseUnchecked("1e100")
+    /// Bounds matching upstream `rust_decimal::MIN`/`MAX`
+    /// (±79228162514264337593543950335).
+    public static let MIN = Decimal.parseUnchecked("-79228162514264337593543950335")
+    public static let MAX = Decimal.parseUnchecked("79228162514264337593543950335")
 
     static func parseUnchecked(_ string: String) -> Decimal {
         Decimal(Foundation.Decimal(string: string, locale: nil) ?? 0)
@@ -32,15 +32,141 @@ public struct Decimal: Sendable, Hashable {
 
     /// Create from a string, erroring on failure.
     public static func parse(_ string: Str) -> StrResult<Decimal> {
-        guard let d = Decimal(exactly: string.value) else {
+        guard isValidLiteral(string.value),
+              let d = Decimal(exactly: string.value) else {
             return .failure(StrError("invalid decimal: \(string.repr())"))
         }
         return .success(d)
     }
 
+    /// Whether `s` is a valid `rust_decimal::from_str_exact` literal:
+    /// `[+-]? ( digits [. digits?]? | . digits ) ( [eE] [+-]? digits )?`
+    /// with at most 29 significant digits and 28 fractional digits.
+    public static func isValidLiteral(_ s: String) -> Bool {
+        var t = s[...]
+        if t.first == "+" || t.first == "-" { t = t.dropFirst() }
+
+        var mantissa = t
+        if let eIdx = t.firstIndex(where: { $0 == "e" || $0 == "E" }) {
+            let exp = t[t.index(after: eIdx)...]
+            mantissa = t[..<eIdx]
+            var expDigits = exp[...]
+            if expDigits.first == "+" || expDigits.first == "-" {
+                expDigits = expDigits.dropFirst()
+            }
+            guard !expDigits.isEmpty,
+                  expDigits.allSatisfy(\.isNumber),
+                  let expVal = Int64(String(expDigits)),
+                  Swift.abs(expVal) <= 9999
+            else { return false }
+        }
+
+        let parts = mantissa.split(separator: ".", omittingEmptySubsequences: false)
+        guard parts.count <= 2 else { return false }
+        let intPart = parts.first.map(String.init) ?? ""
+        let fracPart = parts.count == 2 ? String(parts[1]) : ""
+        guard intPart.allSatisfy(\.isNumber),
+              fracPart.allSatisfy(\.isNumber),
+              !intPart.isEmpty || !fracPart.isEmpty
+        else { return false }
+        // rust_decimal's 96-bit mantissa holds ~28-29 significant digits.
+        let significant = (intPart + fracPart).drop(while: { $0 == "0" })
+        return significant.count <= 29 && fracPart.count <= 28
+    }
+
     public init(_ int: Int64) { value = Foundation.Decimal(int) }
+    /// Lossy convenience init: non-finite or unrepresentable doubles map
+    /// to zero. Prefer `fromDoubleExact` where failure should be an error.
     public init(_ double: Double) {
-        value = (double.isFinite ? Foundation.Decimal(double) : .zero)
+        value = Decimal.fromDoubleExact(double)?.value ?? .zero
+    }
+
+    /// `rust_decimal::from_f64_retain`: the exact decimal expansion of the
+    /// binary double, rounded to 28 significant digits (rust_decimal's
+    /// 96-bit mantissa precision). Returns `nil` when the value cannot be
+    /// represented (non-finite, magnitude beyond ~7.9e28, or scale beyond
+    /// 28 fractional digits).
+    ///
+    /// Note: rust_decimal's last-digit rounding can differ by 1 ulp from
+    /// correct decimal rounding at the 28th significant digit.
+    public static func fromDoubleExact(_ f: Double) -> Decimal? {
+        guard f.isFinite, Swift.abs(f) < 7.93e28 else { return nil }
+        if f == 0 { return Decimal(Int64(0)) }
+
+        // `%.1074g` prints the exact decimal expansion of any f64.
+        // (The `locale:` overload zero-pads instead of computing exact
+        // digits — do not use it here.)
+        var t = String(format: "%.1074g", f)
+        var negative = false
+        if t.hasPrefix("-") {
+            negative = true
+            t.removeFirst()
+        } else if t.hasPrefix("+") {
+            t.removeFirst()
+        }
+
+        var expN = 0
+        if let eIdx = t.firstIndex(of: "e") {
+            expN = Int(t[t.index(after: eIdx)...]) ?? 0
+            t = String(t[..<eIdx])
+        }
+
+        let dotIdx = t.firstIndex(of: ".")
+        let intPart = dotIdx.map { String(t[..<$0]) } ?? t
+        let fracPart = dotIdx.map { String(t[t.index(after: $0)...]) } ?? ""
+        // value = Int(digits) * 10^k0
+        let k0 = expN - fracPart.count
+        let allDigits = (intPart + fracPart)[...].drop(while: { $0 == "0" })
+        guard !allDigits.isEmpty else { return Decimal(Int64(0)) }
+
+        // Round the significant digits to 28, half away from zero.
+        var sig = Array(allDigits)
+        var dropped = 0
+        if sig.count > 28 {
+            dropped = sig.count - 28
+            var kept = Array(sig.prefix(28))
+            if sig[28] >= "5" {
+                var i = kept.count - 1
+                while i >= 0, kept[i] == "9" {
+                    kept[i] = "0"
+                    i -= 1
+                }
+                if i < 0 {
+                    // 999…9 + 1 → 1000…0 (still 28 digits).
+                    kept[0] = "1"
+                } else {
+                    kept[i] = Character(Unicode.Scalar(
+                        Int(String(kept[i]))! + 1)!)
+                }
+            }
+            sig = kept
+        }
+
+        // value ≈ Int(sig) * 10^(k0 + dropped). Normalize trailing zeros
+        // into the exponent for the minimal scale.
+        var k = k0 + dropped
+        while sig.count > 1, sig.last == "0" {
+            sig.removeLast()
+            k += 1
+        }
+        // rust_decimal's scale is capped at 28 fractional digits.
+        guard k >= -28 else { return nil }
+        let out = sig.count
+        let body = String(sig)
+
+        var text = negative ? "-" : ""
+        let pointPos = out + k  // digits before the decimal point
+        if pointPos <= 0 {
+            text += "0." + String(repeating: "0", count: -pointPos) + body
+        } else if pointPos >= out {
+            text += body + String(repeating: "0", count: pointPos - out)
+        } else {
+            text += String(body.prefix(pointPos)) + "."
+                + String(body.suffix(out - pointPos))
+        }
+
+        guard let d = Decimal(exactly: text) else { return nil }
+        return d
     }
 
     public var isZero: Bool { value == 0 }

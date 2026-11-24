@@ -75,7 +75,7 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
       type, ~~assert~~, eval, ~~repr~~, ~~panic~~, ~~version~~,
       ~~bytes~~, ~~label~~, ~~regex~~ (constructor scope), json, yaml,
       toml, csv, xml, cbor, plugin, ~~datetime~~, ~~duration~~, ~~float~~,
-      ~~int~~, bool, none, auto (eval/plugin/target/sys deferred to eval
+      ~~int~~, ~~decimal~~, bool, none, auto (eval/plugin/target/sys deferred to eval
       and loading milestones)
       — datetime/duration/version scopes + time-crate format engine
       ported (construct/today/display/accessors, unit methods, variadic
@@ -97,7 +97,12 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
       with endian/size/signed); float scope (construct via ToFloat
       union incl. ratio/decimal/string, inf/nan constants, is-nan/
       is-infinite/signum with upstream NaN/-0.0 semantics, from-bytes/
-      to-bytes f64/f32 endian/size); 119 direct-call tests green
+      to-bytes f64/f32 endian/size); decimal scope (construct via
+      ToDecimal union, strict from_str_exact literal validation,
+      is-integer/abs/floor/ceil/trunc/fract/round; Decimal.MIN/MAX fixed
+      to real rust_decimal bounds; float->decimal now uses exact binary
+      expansion rounded to 28 sig digits — may differ 1 ulp in last
+      digit vs rust_decimal); 123 direct-call tests green
 - [ ] loading: data formats, packages, fonts
 - [ ] model: document/page/par/text/table/grid/list/enum/terms/
       heading/figure/equation/outlines/notes/bibliography/cite/

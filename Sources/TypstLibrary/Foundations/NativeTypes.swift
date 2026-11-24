@@ -39,7 +39,8 @@ extension Double: NativeType {
 
 extension Decimal: NativeType {
     public static let typeInfo = TypeInfo(name: "decimal", longName: "decimal",
-        title: "Decimal", since: .version([0, 12, 0]))
+        title: "Decimal", since: .version([0, 12, 0]),
+        scope: { decimalScope() })
 }
 
 extension Length: NativeType {

@@ -239,7 +239,7 @@ import TypstUtils
         // invalid float string
         switch harness.call(floatConstruct, harness.args([s("1.2.3")])) {
         case .failure(let r):
-            #expect(r.diagnostics.first?.message == "invalid float: \"1.2.3\"")
+            #expect(r.diagnostics.first?.message == "invalid float: 1.2.3")
         case .success:
             Issue.record("expected error")
         }

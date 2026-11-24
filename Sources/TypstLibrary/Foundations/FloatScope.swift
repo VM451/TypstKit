@@ -44,7 +44,7 @@ extension ToFloat: Castable, IntoValue, FromValue {
             // Upstream replaces U+2212 with ASCII `-` before parsing.
             let text = s.value.replacingOccurrences(of: minusSign, with: "-")
             guard let f = Double(text) else {
-                return .failure(HintedString("invalid float: \(s.repr())"))
+                return .failure(HintedString("invalid float: \(s.value)"))
             }
             return .success(.float(f))
         default: return .failure(error(value))
