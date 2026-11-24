@@ -110,6 +110,15 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
       check, ident modifiers, canonical dedup with ordering hint);
       isIdent made public in TypstSyntax; 126 direct-call tests green
 - [ ] loading: data formats, packages, fonts
+      — IN PROGRESS: loading infra ported (DataSource/Load/Loaded/
+      LoadError/LoadedWithin/LineCol/ReportTextPos in Loading.swift);
+      path.rs ported (RootedPath #[ty] "path" + path() constructor +
+      PathOrStr resolve/resolve_if_some); read/json(+encode)/csv ported
+      in LoadingFormats.swift (json uses custom serde_json-faithful
+      encoder: sorted keys, .0 floats, repr fallback; csv is a minimal
+      rust-csv-semantics parser); VirtualPath.normalize now errors on
+      `..` escaping root (upstream PathError::Escapes — was silently
+      clamping); yaml/toml/cbor/xml pending parser ports
 - [ ] model: document/page/par/text/table/grid/list/enum/terms/
       heading/figure/equation/outlines/notes/bibliography/cite/
       ref/footnote/state/counter/context/query/locate/metadata

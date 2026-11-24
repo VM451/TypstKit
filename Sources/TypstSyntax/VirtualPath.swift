@@ -441,15 +441,13 @@ public struct VirtualPath: Hashable, Sendable, CustomStringConvertible {
     private static func normalize(_ path: String) throws -> String {
         if path.contains("\0") { throw PathError.nul }
         var segments: [String] = []
-        let absolute = path.hasPrefix("/")
         for raw in path.split(separator: "/", omittingEmptySubsequences: true) {
             let s = String(raw)
             if s == "." { continue }
             if s == ".." {
-                guard !segments.isEmpty else {
-                    if absolute { continue }
-                    throw PathError.escapes
-                }
+                // Virtual paths are always root-relative: `..` past the
+                // root escapes (upstream `PathError::Escapes`).
+                guard !segments.isEmpty else { throw PathError.escapes }
                 segments.removeLast()
                 continue
             }

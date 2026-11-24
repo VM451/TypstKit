@@ -82,7 +82,8 @@ public struct Span: Sendable {
 
     /// Create a span from a raw byte range instead of a span number.
     /// Parts exceeding `2^23 - 1` are saturated.
-    static func fromRange(id: FileId, _ range: Range<Int>) -> Span {
+    /// Create a span covering a byte range in an external file.
+    public static func fromRange(id: FileId, _ range: Range<Int>) -> Span {
         let start = saturate(range.lowerBound, rangeValueMax)
         let end = saturate(range.upperBound, rangeValueMax)
         return Span(raw: pack(id: id, low: rangeBase + (start << rangeValueBits) + end))

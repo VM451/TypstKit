@@ -9,13 +9,16 @@ struct MockWorld: World {
     let library: LazyHash<Library>
     let book: LazyHash<FontBook>
     let main: FileId
+    /// In-memory files for data-loading tests, keyed by interned `FileId`.
+    var files: [FileId: Bytes] = [:]
 
-    init() {
+    init(files: [FileId: Bytes] = [:]) {
         var scope = Scope()
         defineFoundations(scope)
         self.library = LazyHash(Library(scope: scope))
         self.book = LazyHash(FontBook())
         self.main = FileId.newForTest("main.typ")
+        self.files = files
     }
 
     func source(_ id: FileId) -> FileResult<Source> {
@@ -23,7 +26,8 @@ struct MockWorld: World {
     }
 
     func file(_ id: FileId) -> FileResult<Bytes> {
-        .failure(FileError("no file", kind: .notFound))
+        if let data = files[id] { return .success(data) }
+        return .failure(FileError("no file", kind: .notFound))
     }
 
     func font(_ index: Int) -> Font? { nil }
@@ -48,9 +52,11 @@ struct MockWorld: World {
 final class FuncHarness {
     var engine: Engine
     var context = Context()
+    let world: MockWorld
 
-    init() {
-        engine = Engine(world: MockWorld())
+    init(world: MockWorld = MockWorld()) {
+        self.world = world
+        engine = Engine(world: world)
     }
 
     /// Invoke a native function by name from the calc module (or global).

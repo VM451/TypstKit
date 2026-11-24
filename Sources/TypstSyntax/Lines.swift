@@ -17,7 +17,8 @@ public final class Lines: @unchecked Sendable {
         }
     }
 
-    init(text: String) {
+    /// Create line mapping for `text`.
+    public init(text: String) {
         self.inner = Inner(lines: Lines.computeLines(text), text: text)
     }
 

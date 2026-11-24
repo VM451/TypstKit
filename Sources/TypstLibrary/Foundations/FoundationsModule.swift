@@ -32,6 +32,7 @@ public func defineFoundations(_ global: Scope) {
     global.defineType(Symbol.self)
     global.defineType(Duration.self)
     global.defineType(Version.self)
+    global.defineType(RootedPath.self)
 
     global.defineFunc(reprFunc)
     global.defineFunc(panicFunc)
@@ -41,6 +42,10 @@ public func defineFoundations(_ global: Scope) {
     global.defineFunc(arrayRange)
 
     global.define("calc", .module(calcModule()))
+
+    // Data loading (`read`, `csv`, `json`) — port of upstream
+    // `loading/mod.rs` global functions.
+    defineDataLoading(into: global)
 
     global.resetCategory()
 }
