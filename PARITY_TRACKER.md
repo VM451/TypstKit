@@ -44,7 +44,7 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
       instead of Rust Arc CoW; see ARCHITECTURE.md)
 - [x] set.rs (SyntaxSet bitmask + all grammar sets)
 - [x] Operators (UnOp/BinOp/Assoc precedence tables from ast.rs)
-- [ ] AST (ast.rs: typed node accessors)
+- [x] AST (ast.rs: typed node accessors — 4 files, ~70 node types)
 - [x] Reparser (reparser.rs: incremental reparse, tryReparseAndRenumber,
       markup/block expr reparsing, delimiter-balance + warning-safety
       checks, exponential renumbering)

@@ -896,28 +896,8 @@ extension Lexer {
     }
 }
 
-/// A non-decimal integer base. Port of `ast::NonDecimalBase`.
-enum NonDecimalBase: Int {
-    case hex = 16
-    case octal = 8
-    case binary = 2
-
-    var radix: Int {
-        switch self {
-        case .hex: return 16
-        case .octal: return 8
-        case .binary: return 2
-        }
-    }
-
-    var name: String {
-        switch self {
-        case .hex: return "hexadecimal"
-        case .octal: return "octal"
-        case .binary: return "binary"
-        }
-    }
-}
+// `NonDecimalBase` lives in AstLiterals.swift (public, port of
+// `ast::NonDecimalBase`); the lexer shares that definition.
 
 // MARK: - Shared predicates & helpers (lexer.rs bottom half)
 
