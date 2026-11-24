@@ -13,6 +13,17 @@ public final class SyntaxNode {
         case inner(InnerNode, SyntaxKind)
         case error(ErrorNode, SyntaxKind)
         case warning(WarningNode, SyntaxKind)
+
+        /// Deep copy of this data payload.
+        func copy() -> Data {
+            switch self {
+            case .leaf(let text, let kind): return .leaf(text, kind)
+            case .inner(let inner, let kind): return .inner(inner.copy(), kind)
+            case .error(let error, let kind): return .error(error.copy(), kind)
+            case .warning(let warning, let kind):
+                return .warning(warning.copy(), kind)
+            }
+        }
     }
 
     var data: Data
@@ -166,11 +177,15 @@ public final class SyntaxNode {
 
     /// Traverse the tree in-order, calling `f` on each node before recursing
     /// on the returned children slice (empty prunes the traversal).
+    ///
+    /// Implemented with an explicit stack so deeply nested trees cannot
+    /// overflow the call stack.
     func traverse(_ f: (SyntaxNode) -> [SyntaxNode]) {
-        func step(_ node: SyntaxNode) {
-            for child in f(node) { step(child) }
+        var stack = [self]
+        while let node = stack.popLast() {
+            let children = f(node)
+            stack.append(contentsOf: children.reversed())
         }
-        step(self)
     }
 
     /// Add a warning message to an existing node.
@@ -289,6 +304,25 @@ public final class SyntaxNode {
         }
     }
 
+    /// Access an inner node mutably for incremental reparsing. Also returns
+    /// the node's span and syntax kind since those are needed.
+    ///
+    /// Unlike `underlying`, this does not descend past wrapped warnings since
+    /// reparsing under syntax warnings cannot be made sound.
+    func reparseInnerNodeMut() -> (inner: InnerNode, kind: SyntaxKind, span: Span)? {
+        guard case .inner(let inner, let kind) = data else { return nil }
+        return (inner, kind, span)
+    }
+
+    /// Deep copy of this node and its whole subtree.
+    ///
+    /// Used for copy-on-write in `Source`: upstream's `Arc`-shared nodes are
+    /// cloned lazily by the reparser, but since `SyntaxNode` is a class here,
+    /// an aliased source must copy its tree before mutating.
+    func copy() -> SyntaxNode {
+        SyntaxNode(data: data.copy(), span: span)
+    }
+
     /// Set a synthetic span for the node and all descendants, adding index
     /// hints to errors and warnings.
     public func synthesize(_ newSpan: Span) {
@@ -398,20 +432,47 @@ public final class SyntaxNode {
     }
 
     /// Whether the two syntax nodes are the same apart from spans.
+    ///
+    /// Implemented iteratively with an explicit work list: deeply nested
+    /// trees (e.g. the reparser's nesting tests) would overflow the stack with
+    /// naive recursion.
     public func spanlessEq(_ other: SyntaxNode) -> Bool {
         kind == other.kind && Self.dataSpanlessEq(data, other.data)
     }
 
     private static func dataSpanlessEq(_ a: Data, _ b: Data) -> Bool {
-        switch (a, b) {
-        case (.leaf(let x, _), .leaf(let y, _)): return x == y
-        case (.inner(let x, _), .inner(let y, _)): return x.spanlessEq(y)
-        case (.error(let x, _), .error(let y, _)): return x == y
-        case (.warning(let x, _), .warning(let y, _)):
-            guard x.subRange == y.subRange, x.message == y.message,
-                  x.hints.elementsEqual(y.hints, by: ==) else { return false }
-            return dataSpanlessEq(x.child, y.child)
-        default: return false
+        var stack: [(Data, Data)] = [(a, b)]
+        while let (da, db) = stack.popLast() {
+            guard kindOf(da) == kindOf(db) else { return false }
+            switch (da, db) {
+            case (.leaf(let x, _), .leaf(let y, _)):
+                if x != y { return false }
+            case (.inner(let x, _), .inner(let y, _)):
+                guard x.len == y.len
+                    && x.descendants == y.descendants
+                    && x.diagnosis == y.diagnosis
+                    && x.children.count == y.children.count
+                else { return false }
+                for (ca, cb) in zip(x.children, y.children) {
+                    stack.append((ca.data, cb.data))
+                }
+            case (.error(let x, _), .error(let y, _)):
+                if x != y { return false }
+            case (.warning(let x, _), .warning(let y, _)):
+                guard x.subRange == y.subRange, x.message == y.message,
+                      x.hints.elementsEqual(y.hints, by: ==) else { return false }
+                stack.append((x.child, y.child))
+            default:
+                return false
+            }
+        }
+        return true
+    }
+
+    private static func kindOf(_ d: Data) -> SyntaxKind {
+        switch d {
+        case .leaf(_, let k), .inner(_, let k), .error(_, let k), .warning(_, let k):
+            return k
         }
     }
 }
@@ -454,7 +515,11 @@ final class InnerNode {
     }
 
     /// Assign span numbers within an interval to this subtree.
-    func numberize(node: SyntaxNode, id: FileId, range: Range<Int>?,
+    ///
+    /// When `node` is `nil`, only a `range` of children is numbered and the
+    /// node's own span and `upper` bound are left untouched (used by
+    /// incremental renumbering during reparsing).
+    func numberize(node: SyntaxNode?, id: FileId, range: Range<Int>?,
                    within: Range<UInt64>) throws {
         let descendants: Int
         if let range {
@@ -472,10 +537,12 @@ final class InnerNode {
         }
 
         var start = within.lowerBound
-        let end = start + stride
-        node.span = Span.fromNumber(id: id, (start + end) / 2)
-        upper = within.upperBound
-        start = end
+        if let node {
+            let end = start + stride
+            node.span = Span.fromNumber(id: id, (start + end) / 2)
+            upper = within.upperBound
+            start = end
+        }
 
         let count = children.count
         for i in (range ?? 0..<count) {
@@ -484,6 +551,13 @@ final class InnerNode {
             try child.numberize(id: id, within: start..<childEnd)
             start = childEnd
         }
+    }
+
+    /// Deep copy: fresh `InnerNode` and fresh copies of all children.
+    func copy() -> InnerNode {
+        let copied = InnerNode(children: children.map { $0.copy() })
+        copied.upper = upper
+        return copied
     }
 
     /// Whether two inner nodes are the same apart from spans.
@@ -550,6 +624,13 @@ final class ErrorNode: Equatable {
         self.hints = []
     }
 
+    /// Deep copy.
+    func copy() -> ErrorNode {
+        let copied = ErrorNode(message: message, text: text)
+        copied.hints = hints
+        return copied
+    }
+
     /// Produce the syntax diagnostic for an error.
     func diagnostic(span: Span) -> SyntaxDiagnostic {
         SyntaxDiagnostic(isError: true, span: span.diag, message: message,
@@ -587,6 +668,13 @@ final class WarningNode {
         self.subRange = subRange
         self.message = message
         self.hints = []
+    }
+
+    /// Deep copy.
+    func copy() -> WarningNode {
+        let copied = WarningNode(child: child.copy(), subRange: subRange, message: message)
+        copied.hints = hints
+        return copied
     }
 
     /// Produce the syntax diagnostic for a warning.

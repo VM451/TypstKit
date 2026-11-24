@@ -25,6 +25,9 @@ public struct Span: Sendable {
     /// The full range of numbers available for source file span numbering.
     static let fullRange: ClosedRange<UInt64> = 2 ... ((1 << 47) - 1)
 
+    /// The full range of assignable span numbers (upstream `Span::FULL`).
+    static let FULL: Range<UInt64> = 2 ..< (1 << 47)
+
     /// Reserved value for the detached span.
     static let detachedRaw: UInt64 = 1
 

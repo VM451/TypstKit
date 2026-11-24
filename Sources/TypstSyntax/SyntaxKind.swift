@@ -517,3 +517,95 @@ public enum SyntaxMode: Sendable, Hashable {
     /// Math mode: mathematical content.
     case math
 }
+
+/// How to determine the `SyntaxMode` we will be in when immediately after a
+/// node of this kind. Port of `ModeAfter` in `kind.rs`.
+enum ModeAfter {
+    /// The mode is known!
+    case known(SyntaxMode)
+    /// The syntax mode after this kind is based on its parent.
+    case parent
+    /// Comments and the bodies of raw text produce no syntax mode.
+    case none
+    /// Text under `Raw` is `none`, otherwise it is markup.
+    case text
+    /// After the opening raw delimiter is `none`, but after the closing one
+    /// is the same as the parent `Raw`.
+    case rawDelim
+    /// Dollar signs in an equation.
+    case dollar
+    /// Spaces are usually only based on their parent, but an edge case with
+    /// `Equation` requires special handling.
+    case space
+    /// Kinds that can be embedded in markup or math with a hash.
+    case embeddable
+}
+
+extension SyntaxKind {
+    /// How to determine the `SyntaxMode` we will be in when immediately after
+    /// a node of this kind.
+    ///
+    /// The high-level interface for this is `LinkedNode.modeAfter`.
+    var modeAfter: ModeAfter {
+        switch self {
+        case .end: return .none
+        case .error: return .parent
+
+        case .shebang, .lineComment, .blockComment: return .none
+
+        case .markup: return .known(.markup)
+        case .text: return .text
+        case .spaceNoNewline, .spaceWithNewline: return .space
+        case .linebreak: return .parent
+        case .parbreak: return .known(.markup)
+        case .escape: return .parent
+        case .shorthand, .smartQuote, .strong, .emph: return .known(.markup)
+        case .raw: return .embeddable
+        case .rawLang: return .none
+        case .rawDelim: return .rawDelim
+        case .rawTrimmed: return .none
+        case .link, .ref, .refMarker: return .known(.markup)
+        case .label: return .embeddable
+        case .heading, .headingMarker, .listItem, .listMarker,
+             .enumItem, .enumMarker, .termItem, .termMarker:
+            return .known(.markup)
+
+        case .equation: return .embeddable
+        case .math, .mathLetter, .mathSymbol, .mathNumber, .mathIdent,
+             .mathFieldAccess, .mathShorthand, .mathAlignPoint, .mathCall,
+             .mathArgs, .mathOpening, .mathClosing, .mathDelimited,
+             .mathAttach, .mathPrimes, .mathFrac, .mathRoot:
+            return .known(.math)
+
+        case .hash, .leftBrace, .rightBrace: return .known(.code)
+        case .leftBracket: return .known(.markup)
+        case .rightBracket, .leftParen, .rightParen, .comma, .semicolon,
+             .colon, .star, .underscore, .slash, .dot, .dots:
+            return .parent
+        case .dollar: return .dollar
+        case .plus, .minus, .eq, .eqEq, .exclEq, .lt, .ltEq, .gt, .gtEq,
+             .plusEq, .hyphEq, .starEq, .slashEq, .arrow:
+            return .known(.code)
+        case .hat, .root, .bang: return .known(.math)
+
+        case .not, .and, .or, .none, .auto, .let, .set, .show, .context,
+             .if, .else, .for, .in, .while, .break, .continue, .return,
+             .import, .include, .as:
+            return .known(.code)
+
+        case .code, .bool, .int, .float, .numeric: return .known(.code)
+        case .ident: return .embeddable
+        case .str: return .embeddable
+        case .codeBlock: return .known(.code)
+        case .contentBlock: return .embeddable
+        case .parenthesized, .array, .dict, .keyed, .unary, .binary,
+             .fieldAccess, .funcCall, .args, .closure, .params, .letBinding,
+             .setRule, .showRule, .contextual, .conditional, .whileLoop,
+             .forLoop, .moduleImport, .importItems, .importItemPath,
+             .renamedImportItem, .moduleInclude, .loopBreak, .loopContinue,
+             .funcReturn, .destructuring, .destructAssignment:
+            return .known(.code)
+        case .named, .spread: return .parent
+        }
+    }
+}
