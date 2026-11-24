@@ -147,3 +147,101 @@ extension Decimal: Repr {
 extension Decimal: Comparable {
     public static func < (a: Decimal, b: Decimal) -> Bool { a.value < b.value }
 }
+
+// MARK: - Rounding and checked arithmetic (decimal.rs)
+
+extension Decimal {
+    /// Whether this decimal has no fractional part.
+    public var isInteger: Bool { trunc().value == value }
+
+    /// Absolute value.
+    public func abs() -> Decimal { isNegative ? -self : self }
+
+    /// Largest integer less than or equal to this decimal.
+    public func floor() -> Decimal {
+        round(digits: 0, mode: .floor)
+    }
+
+    /// Smallest integer greater than or equal to this decimal.
+    public func ceil() -> Decimal {
+        round(digits: 0, mode: .ceil)
+    }
+
+    /// Integer part (toward zero).
+    public func trunc() -> Decimal {
+        round(digits: 0, mode: .trunc)
+    }
+
+    /// Fractional part (`self - trunc(self)`).
+    public func fract() -> Decimal { self - trunc() }
+
+    /// Round to `digits` digits after the decimal point using the
+    /// "midpoint away from zero" strategy (upstream `round`).
+    ///
+    /// Negative `digits` rounds to integer digits (e.g. -2 rounds to
+    /// hundreds). Returns `nil` when the result would leave the
+    /// representable range — approximated by the `rust_decimal` 28-digit
+    /// bound since Foundation `Decimal` is wider.
+    public func round(digits: Int) -> Decimal? {
+        if digits >= 0 {
+            return round(digits: digits, mode: .halfExpand)
+        }
+        let shift = -digits
+        guard shift <= 28 else {
+            // Beyond rust_decimal's integer-digit range: result is zero
+            // with the sign preserved, or overflow — mirror upstream's
+            // scale-based behavior conservatively.
+            return Decimal(value < 0 ? -0.0 : 0.0)
+        }
+        guard let pow = Foundation.Decimal(string: "1e\(shift)", locale: nil) else {
+            return nil
+        }
+        let scaled = self / Decimal(pow)
+        let rounded = scaled.round(digits: 0, mode: .halfExpand)
+        return rounded * Decimal(pow)
+    }
+
+    /// Remainder of truncated division (`self - trunc(self/other)*other`).
+    public func checkedRem(_ other: Decimal) -> Decimal? {
+        guard other.value != 0 else { return nil }
+        return self - (self / other).trunc() * other
+    }
+
+    /// Least non-negative remainder of Euclidean division.
+    public func checkedRemEuclid(_ other: Decimal) -> Decimal? {
+        guard let r = checkedRem(other) else { return nil }
+        return r.isNegative ? r + other.abs() : r
+    }
+
+    /// Quotient of Euclidean division (truncated, adjusted so the
+    /// remainder is non-negative).
+    public func checkedDivEuclid(_ other: Decimal) -> Decimal? {
+        guard other.value != 0 else { return nil }
+        let q = (self / other).trunc()
+        guard let r = checkedRem(other), r.isNegative else { return q }
+        return other.isPositive ? q - Decimal.ONE : q + Decimal.ONE
+    }
+
+    /// `self^other` for integer `other` (exponentiation by squaring).
+    ///
+    /// Foundation `Decimal` cannot signal overflow, so this always
+    /// succeeds where upstream `rust_decimal::checked_powi` may return
+    /// `None` at the extreme precision boundary.
+    public func checkedPowi(_ other: Int64) -> Decimal? {
+        if other == 0 { return Decimal.ONE }
+        var base = self
+        var exp = other < 0 ? -other : other
+        var result = Decimal.ONE
+        while exp > 0 {
+            if exp & 1 == 1 { result = result * base }
+            exp >>= 1
+            if exp > 0 { base = base * base }
+        }
+        return other < 0 ? Decimal.ONE / result : result
+    }
+
+    /// Clamp between `min` and `max` (upstream `Ord::clamp`).
+    public static func clamp(_ value: Decimal, _ min: Decimal, _ max: Decimal) -> Decimal {
+        Swift.min(Swift.max(value, min), max)
+    }
+}

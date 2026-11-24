@@ -137,3 +137,13 @@ extension Module: NativeType {
     public static let typeInfo = TypeInfo(name: "module", longName: "module",
         title: "Module", since: .forever)
 }
+
+extension Regex: NativeType {
+    public static let typeInfo = TypeInfo(name: "regex", longName: "regex",
+        title: "Regex", since: .forever)
+}
+
+extension Selector: NativeType {
+    public static let typeInfo = TypeInfo(name: "selector", longName: "selector",
+        title: "Selector", since: .forever)
+}

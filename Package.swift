@@ -73,6 +73,10 @@ let package = Package(
             dependencies: ["TypstUniverseCore", "TypstUniverseStorage", "TypstUniverseUI"]
         ),
         .testTarget(
+            name: "TypstLibraryTests",
+            dependencies: ["TypstLibrary", "TypstSyntax", "TypstUtils"]
+        ),
+        .testTarget(
             name: "TypstSyntaxTests",
             dependencies: ["TypstSyntax"],
             resources: [.copy("Suite")]
