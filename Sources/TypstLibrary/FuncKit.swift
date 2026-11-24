@@ -160,3 +160,21 @@ func nativeFunc<T: IntoValue & Castable>(
         returns: { resolvedReturns }
     )
 }
+
+/// Take an optional positional argument (`Option<T>` upstream params).
+extension Args {
+    /// `eat` for `Option<T>` parameters: flattens the double optional so an
+    /// explicit `none` argument and a missing argument both yield `nil`.
+    public mutating func eatOpt<T>() throws -> T?
+        where T: Castable & IntoValue & FromValue {
+        let value: T?? = try eatT()
+        return value ?? nil
+    }
+
+    /// `named` for `Option<T>` parameters: same flattening as `eatOpt`.
+    public mutating func namedOpt<T>(_ name: String) throws -> T?
+        where T: Castable & IntoValue & FromValue {
+        let value: T?? = try namedT(name)
+        return value ?? nil
+    }
+}

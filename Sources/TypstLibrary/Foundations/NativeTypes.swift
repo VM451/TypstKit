@@ -75,7 +75,9 @@ extension Version: NativeType {
 
 extension Str: NativeType {
     public static let typeInfo = TypeInfo(name: "str", longName: "string",
-        title: "String", since: .forever)
+        title: "String", since: .forever,
+        constructor: { Func(native: strConstruct) },
+        scope: { strScope() })
 }
 
 extension Bytes: NativeType {
@@ -140,7 +142,9 @@ extension Module: NativeType {
 
 extension Regex: NativeType {
     public static let typeInfo = TypeInfo(name: "regex", longName: "regex",
-        title: "Regex", since: .forever)
+        title: "Regex", since: .forever,
+        constructor: { Func(native: regexConstruct) },
+        scope: { regexScope() })
 }
 
 extension Selector: NativeType {

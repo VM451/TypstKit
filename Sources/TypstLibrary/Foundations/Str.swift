@@ -512,7 +512,7 @@ func capturesToDict(_ m: RegexMatch) -> Dict {
 // MARK: - Supporting types
 
 /// A string or regex pattern. Port of `StrPattern`.
-public enum StrPattern: Sendable {
+public enum StrPattern: Sendable, Hashable {
     case str(Str)
     case regex(Regex)
 }
@@ -524,7 +524,7 @@ public enum StrSide: String, Sendable, Hashable {
 }
 
 /// A replacement: literal string or function. Port of `Replacement`.
-public enum Replacement: Sendable {
+public enum Replacement: Sendable, Hashable {
     case str(Str)
     case function(Func)
 }
@@ -539,13 +539,13 @@ public enum UnicodeNormalForm: String, Sendable, Hashable {
 
 /// Values convertible to a string in the `str()` constructor.
 /// Port of `ToStr`.
-public enum ToStr: Sendable {
+public enum ToStr: Sendable, Hashable {
     case str(Str)
     case int(Int64)
 }
 
 /// The base for integer-to-string conversion. Port of `Base`.
-public enum Base: Sendable {
+public enum Base: Sendable, Hashable {
     case `default`
     case user(Int64)
 
