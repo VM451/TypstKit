@@ -31,7 +31,7 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
 - [x] Span / SpanNumber / SpanKind / DiagSpan / SubRange / Spanned
 - [ ] Source (source.rs: text, lines, encoding, edits)
 - [ ] Lines (lines.rs: line index, byte<->line/column mapping)
-- [ ] Lexer (lexer.rs: markup/code/math modes, all token kinds)
+- [ ] Lexer (lexer.rs: markup/code/math modes, all token kinds) — In Progress
 - [ ] Parser (parser.rs: full CST construction, error recovery)
 - [ ] Node (node.rs: green/red tree, SyntaxNode API)
 - [ ] AST (ast.rs: typed node accessors)
