@@ -474,6 +474,20 @@ extension Module: Castable, IntoValue, FromValue {
     }
 }
 
+extension Selector: Castable, IntoValue, FromValue {
+    public static var input: CastInfo { .type(Type.of(Selector.self)) }
+    public static var output: CastInfo { .type(Type.of(Selector.self)) }
+    public static func castable(_ value: Value) -> Bool {
+        if case .selector = value { return true }
+        return false
+    }
+    public func intoValue() -> Value { .selector(self) }
+    public static func fromValue(_ value: Value) -> HintedStrResult<Self> {
+        guard case let .selector(v) = value else { return .failure(error(value)) }
+        return .success(v)
+    }
+}
+
 // MARK: - Smart / Spanned
 
 extension Smart: Castable where T: Castable {

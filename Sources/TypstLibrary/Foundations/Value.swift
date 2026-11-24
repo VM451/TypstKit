@@ -33,6 +33,7 @@ public indirect enum Value: Sendable {
     case arguments(Args)
     case type(Type)
     case module(Module)
+    case selector(Selector)
     case dynamic(Dynamic)
 }
 
@@ -90,6 +91,7 @@ extension Value {
         case .arguments: return Type.of(Args.self)
         case .type: return Type.of(Type.self)
         case .module: return Type.of(Module.self)
+        case .selector: return Type.of(Selector.self)
         case let .dynamic(v): return v.type
         }
     }
@@ -222,6 +224,7 @@ extension Value: Hashable {
         case let .arguments(v): hasher.combine(v)
         case let .type(v): hasher.combine(v)
         case let .module(v): hasher.combine(v)
+        case let .selector(v): hasher.combine(v)
         case let .dynamic(v): hasher.combine(v)
         }
     }
@@ -259,6 +262,7 @@ extension Value: Hashable {
         case .type: return 27
         case .module: return 28
         case .dynamic: return 29
+        case .selector: return 30
         }
     }
 }
@@ -295,6 +299,7 @@ extension Value: CustomDebugStringConvertible {
         case let .arguments(v): return v.debugDescription
         case let .type(v): return "Type(\(v.longName))"
         case let .module(v): return "\(v)"
+        case let .selector(v): return "\(v)"
         case let .dynamic(v): return "\(v)"
         }
     }
@@ -332,6 +337,7 @@ extension Value: Repr {
         case let .arguments(v): return v.repr()
         case let .type(v): return v.repr()
         case let .module(v): return v.repr()
+        case let .selector(v): return v.repr()
         case let .dynamic(v): return v.repr()
         }
     }

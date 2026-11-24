@@ -141,7 +141,7 @@ extension Dict: NativeType {
 
 extension Func: NativeType {
     public static let typeInfo = TypeInfo(name: "function", longName: "function",
-        title: "Function", since: .forever)
+        title: "Function", since: .forever, scope: { funcScope() })
 }
 
 extension Args: NativeType {
