@@ -33,7 +33,7 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
       PackageSpec / PackageVersion / PathError / RealizeError
 - [x] Span / SpanNumber / SpanKind / DiagSpan / SubRange / Spanned
 - [ ] Source (source.rs: text, lines, encoding, edits)
-- [ ] Lines (lines.rs: line index, byte<->line/column mapping)
+- [x] Lines (lines.rs: line index, byte<->line/column mapping, edit/replace)
 - [x] Lexer (lexer.rs: markup/code/math modes, all token kinds)
 - [x] Parser (parser.rs: full CST construction, error recovery,
       packrat memoization for parenthesized exprs, depth cap)
