@@ -794,6 +794,46 @@ extension FootnoteElem {
     }
 }
 
+extension AssetElem {
+    public static func construct(engine: inout Engine, args: inout Args) throws -> Content {
+        var elem = AssetElem(path: try args.expectT("path"),
+                             data: try args.expectT("data"))
+        elem.span = args.span
+        try args.finishT()
+        return Content(elem)
+    }
+}
+
+extension FigureElem {
+    public static func construct(engine: inout Engine, args: inout Args) throws -> Content {
+        // `body` is declared first upstream, so it is parsed first.
+        var elem = FigureElem(body: try args.expectT("body"))
+        elem.alt = try args.namedOpt("alt")
+        elem.placement = try args.namedOpt("placement")
+        elem.scope = try args.namedT("scope") ?? elem.scope
+        elem.caption = try args.namedOpt("caption")
+        elem.kind = try args.namedT("kind") ?? elem.kind
+        elem.supplement = try args.namedT("supplement") ?? elem.supplement
+        elem.numbering = try args.namedOpt("numbering") ?? elem.numbering
+        elem.gap = try args.namedT("gap") ?? elem.gap
+        elem.outlined = try args.namedT("outlined") ?? elem.outlined
+        elem.span = args.span
+        try args.finishT()
+        return Content(elem)
+    }
+}
+
+extension FigureCaption {
+    public static func construct(engine: inout Engine, args: inout Args) throws -> Content {
+        var elem = FigureCaption(body: try args.expectT("body"))
+        elem.position = try args.namedT("position") ?? elem.position
+        elem.separator = try args.namedT("separator") ?? elem.separator
+        elem.span = args.span
+        try args.finishT()
+        return Content(elem)
+    }
+}
+
 extension FootnoteEntry {
     public static func construct(engine: inout Engine, args: inout Args) throws -> Content {
         let note: Content = try args.expectT("note")
@@ -847,6 +887,15 @@ extension FootnoteElem {
     }
 }
 
+extension FigureElem {
+    /// Upstream `#[scope] impl FigureElem { #[elem] type FigureCaption; }`.
+    static var captionScope: Scope {
+        let scope = Scope()
+        scope.define("caption", .function(Func(element: Element(FigureCaption.self))))
+        return scope
+    }
+}
+
 /// Register an element function under its upstream name.
 private func defineElement<T: NativeElement>(into global: Scope, _ type: T.Type = T.self) {
     let element = Element(T.self)
@@ -882,6 +931,8 @@ func defineModelElements(into global: Scope) {
     defineElement(into: global, DividerElem.self)
     defineElement(into: global, QuoteElem.self)
     defineElement(into: global, FootnoteElem.self)
+    defineElement(into: global, AssetElem.self)
+    defineElement(into: global, FigureElem.self)
     global.defineFunc(numberingFunc)
 }
 

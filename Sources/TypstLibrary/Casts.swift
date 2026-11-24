@@ -800,3 +800,20 @@ extension FillRule: Castable, IntoValue, FromValue {
         return .success(v)
     }
 }
+
+extension Element: Castable, IntoValue, FromValue {
+    /// Element functions are the `func` values that carry an element.
+    public static var input: CastInfo { .type(Type.of(Func.self)) }
+    public static var output: CastInfo { input }
+    public static func castable(_ value: Value) -> Bool {
+        guard case let .function(f) = value else { return false }
+        return f.element != nil
+    }
+    public func intoValue() -> Value { function.intoValue() }
+    public static func fromValue(_ value: Value) -> HintedStrResult<Self> {
+        guard case let .function(f) = value, let element = f.element else {
+            return .failure(error(value))
+        }
+        return .success(element)
+    }
+}
