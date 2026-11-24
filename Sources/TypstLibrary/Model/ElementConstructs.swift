@@ -835,6 +835,13 @@ func defineModelElements(into global: Scope) {
     defineElement(into: global, LinebreakElem.self)
     defineElement(into: global, SmartQuoteElem.self)
     defineElement(into: global, TextElem.self)
+    defineElement(into: global, UnderlineElem.self)
+    defineElement(into: global, OverlineElem.self)
+    defineElement(into: global, StrikeElem.self)
+    defineElement(into: global, HighlightElem.self)
+    defineElement(into: global, SubElem.self)
+    defineElement(into: global, SuperElem.self)
+    defineElement(into: global, SmallcapsElem.self)
 }
 
 /// Port of upstream `layout/mod.rs` element registration for the elements
