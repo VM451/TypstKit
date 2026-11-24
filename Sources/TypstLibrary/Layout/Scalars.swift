@@ -644,3 +644,11 @@ extension Length: Fold {
         inner
     }
 }
+
+extension Rel: Fold where T: Fold {
+    /// The ratio part is taken from the inner value; the absolute part is
+    /// folded (upstream `Fold for Rel<T>`).
+    public static func fold(_ inner: Rel<T>, _ outer: Rel<T>) -> Rel<T> {
+        Rel(rel: inner.rel, abs: T.fold(inner.abs, outer.abs))
+    }
+}

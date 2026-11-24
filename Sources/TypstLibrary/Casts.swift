@@ -573,8 +573,6 @@ extension Dir: CustomDebugStringConvertible {
 
 extension Dir: DynamicValue {}
 
-extension Stroke: DynamicValue {}
-
 // MARK: - Alignment component casts
 
 extension HAlignment: Castable, IntoValue, FromValue {

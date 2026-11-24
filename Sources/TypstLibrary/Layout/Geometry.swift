@@ -621,3 +621,219 @@ extension Sides: Hashable where T: Hashable {}
 extension Corners: Equatable where T: Equatable {}
 extension Corners: @unchecked Sendable {}
 extension Corners: Hashable where T: Hashable {}
+
+// MARK: - Optional-component casts (upstream `Sides<Option<T>>` / `Corners<Option<T>>`)
+
+/// Element type for the `Sides`/`Corners` optional-component casts.
+/// Upstream implements `IntoValue`/`FromValue` for `Sides<Option<T>>` and
+/// `Corners<Option<T>>` where `None` means "unspecified"; dict keys fall
+/// back through `x`/`y`/`rest` (sides) or the side keys (corners).
+public protocol OptionalCast {
+    associatedtype Wrapped
+    /// The "unspecified" element value.
+    static var unspecified: Self { get }
+    /// The wrapped value when specified.
+    var wrappedComponent: Wrapped? { get }
+    init(wrappedComponent: Wrapped?)
+}
+
+extension Optional: OptionalCast {
+    public static var unspecified: Self { nil }
+    public var wrappedComponent: Wrapped? { self }
+    public init(wrappedComponent: Wrapped?) { self = wrappedComponent }
+}
+
+extension Sides: Castable, IntoValue, FromValue
+where T: OptionalCast & Equatable & IntoValue,
+      T.Wrapped: Castable & IntoValue & FromValue {
+
+    public static var input: CastInfo {
+        .union([.type(Type.of(Dict.self)), T.Wrapped.input])
+    }
+    public static var output: CastInfo { input }
+
+    public static func castable(_ value: Value) -> Bool {
+        if case .dict = value { return true }
+        return T.Wrapped.castable(value)
+    }
+
+    public func intoValue() -> Value {
+        if isUniform(), case .some = left.wrappedComponent {
+            return left.intoValue()
+        }
+        var dict = Dict()
+        for (key, component) in [("left", left), ("top", top),
+                                  ("right", right), ("bottom", bottom)] {
+            if case .some = component.wrappedComponent {
+                dict.insert(key, component.intoValue())
+            }
+        }
+        return .dict(dict)
+    }
+
+    /// Dict form: `{left, top, right, bottom, x, y, rest}` with the
+    /// `x`/`y`/`rest` fallback chain (upstream `Sides<Option<T>>::from_value`).
+    static func parseDict(_ dict: inout Dict) throws -> Sides<T> {
+        let expectedKeys = ["left", "top", "right", "bottom", "x", "y", "rest"]
+        func take(_ key: String) throws -> T.Wrapped? {
+            guard case .success(let v) = dict.take(key) else { return nil }
+            return try T.Wrapped.fromValue(v).get()
+        }
+        let rest = try take("rest")
+        let x = try take("x") ?? rest
+        let y = try take("y") ?? rest
+        let left = try take("left") ?? x
+        let top = try take("top") ?? y
+        let right = try take("right") ?? x
+        let bottom = try take("bottom") ?? y
+        if case .failure(let e) = dict.finish(expected: expectedKeys) {
+            throw HintedString(e.message)
+        }
+        return Sides(
+            left: T(wrappedComponent: left),
+            top: T(wrappedComponent: top),
+            right: T(wrappedComponent: right),
+            bottom: T(wrappedComponent: bottom))
+    }
+
+    public static func fromValue(_ value: Value) -> HintedStrResult<Self> {
+        let expectedKeys = ["left", "top", "right", "bottom", "x", "y", "rest"]
+        if case .dict(var dict) = value {
+            if dict.keys.isEmpty {
+                return .success(.splat(.unspecified))
+            }
+            if dict.keys.contains(where: { expectedKeys.contains($0.value) }) {
+                do { return .success(try parseDict(&dict)) }
+                catch let e as HintedString { return .failure(e) }
+                catch { return .failure(HintedString("\(error)")) }
+            }
+        }
+
+        if T.Wrapped.castable(value) {
+            return T.Wrapped.fromValue(value).map { wrapped in
+                .splat(T(wrappedComponent: .some(wrapped)))
+            }
+        }
+        if case let .dict(d) = value {
+            return .failure(HintedString(
+                Dict.unexpectedKeys(d.keys.map(\.value), expected: nil)))
+        }
+        return .failure(error(value))
+    }
+}
+
+extension Corners: Castable, IntoValue, FromValue
+where T: OptionalCast & Equatable & IntoValue,
+      T.Wrapped: Castable & IntoValue & FromValue {
+
+    public static var input: CastInfo {
+        .union([.type(Type.of(Dict.self)), T.Wrapped.input])
+    }
+    public static var output: CastInfo { input }
+
+    public static func castable(_ value: Value) -> Bool {
+        if case .dict = value { return true }
+        return T.Wrapped.castable(value)
+    }
+
+    public func intoValue() -> Value {
+        if isUniform(), case .some = topLeft.wrappedComponent {
+            return topLeft.intoValue()
+        }
+        var dict = Dict()
+        for (key, component) in [("top-left", topLeft), ("top-right", topRight),
+                                  ("bottom-right", bottomRight),
+                                  ("bottom-left", bottomLeft)] {
+            if case .some = component.wrappedComponent {
+                dict.insert(key, component.intoValue())
+            }
+        }
+        return .dict(dict)
+    }
+
+    /// Dict form with the `rest` → side → corner fallback chain
+    /// (upstream `Corners<Option<T>>::from_value`).
+    static func parseDict(_ dict: inout Dict) throws -> Corners<T> {
+        let expectedKeys = ["top-left", "top-right", "bottom-right",
+                            "bottom-left", "left", "top", "right", "bottom",
+                            "rest"]
+        func take(_ key: String) throws -> T.Wrapped? {
+            guard case .success(let v) = dict.take(key) else { return nil }
+            return try T.Wrapped.fromValue(v).get()
+        }
+        let rest = try take("rest")
+        let left = try take("left") ?? rest
+        let top = try take("top") ?? rest
+        let right = try take("right") ?? rest
+        let bottom = try take("bottom") ?? rest
+        let topLeft = try take("top-left") ?? top ?? left
+        let topRight = try take("top-right") ?? top ?? right
+        let bottomRight = try take("bottom-right") ?? bottom ?? right
+        let bottomLeft = try take("bottom-left") ?? bottom ?? left
+        if case .failure(let e) = dict.finish(expected: expectedKeys) {
+            throw HintedString(e.message)
+        }
+        return Corners(
+            topLeft: T(wrappedComponent: topLeft),
+            topRight: T(wrappedComponent: topRight),
+            bottomRight: T(wrappedComponent: bottomRight),
+            bottomLeft: T(wrappedComponent: bottomLeft))
+    }
+
+    public static func fromValue(_ value: Value) -> HintedStrResult<Self> {
+        let expectedKeys = ["top-left", "top-right", "bottom-right",
+                            "bottom-left", "left", "top", "right", "bottom",
+                            "rest"]
+        if case .dict(var dict) = value {
+            if dict.keys.isEmpty {
+                return .success(.splat(.unspecified))
+            }
+            if dict.keys.contains(where: { expectedKeys.contains($0.value) }) {
+                do { return .success(try parseDict(&dict)) }
+                catch let e as HintedString { return .failure(e) }
+                catch { return .failure(HintedString("\(error)")) }
+            }
+        }
+
+        if T.Wrapped.castable(value) {
+            return T.Wrapped.fromValue(value).map { wrapped in
+                .splat(T(wrappedComponent: .some(wrapped)))
+            }
+        }
+        if case let .dict(d) = value {
+            return .failure(HintedString(
+                Dict.unexpectedKeys(d.keys.map(\.value), expected: nil)))
+        }
+        return .failure(error(value))
+    }
+}
+
+extension Sides: Fold where T: AlternativeFold {
+    /// Component-wise `fold_or` (upstream `Fold for Sides<Option<T>>`).
+    public static func fold(_ inner: Sides<T>, _ outer: Sides<T>) -> Sides<T> {
+        inner.zip(outer).map { T.foldOr($0.0, $0.1) }
+    }
+}
+
+extension Corners: Fold where T: AlternativeFold {
+    /// Component-wise `fold_or` (upstream `Fold for Corners<Option<T>>`).
+    public static func fold(_ inner: Corners<T>, _ outer: Corners<T>) -> Corners<T> {
+        inner.zip(outer).map { T.foldOr($0.0, $0.1) }
+    }
+}
+
+extension Sides: Resolve where T: Resolve {
+    public typealias Output = Sides<T.Output>
+
+    public func resolve(_ styles: StyleChain) -> Sides<T.Output> {
+        map { $0.resolve(styles) }
+    }
+}
+
+extension Corners: Resolve where T: Resolve {
+    public typealias Output = Corners<T.Output>
+
+    public func resolve(_ styles: StyleChain) -> Corners<T.Output> {
+        map { $0.resolve(styles) }
+    }
+}

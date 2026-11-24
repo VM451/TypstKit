@@ -396,3 +396,11 @@ public func loadedToStr(_ loaded: Loaded) throws -> Str {
     // Valid UTF-8 — safe to decode.
     return Str(String(decoding: loaded.data.storage, as: UTF8.self))
 }
+
+extension OneOrMultiple: Fold {
+    /// Outer items first, then inner appended (upstream `Fold for
+    /// OneOrMultiple<T>`).
+    public static func fold(_ inner: Self, _ outer: Self) -> Self {
+        OneOrMultiple(outer.items + inner.items)
+    }
+}

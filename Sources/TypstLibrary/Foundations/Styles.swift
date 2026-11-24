@@ -379,11 +379,57 @@ public protocol Resolve {
 ///
 /// Port of `Fold` in `styles.rs`.
 public protocol Fold {
+    /// `lhs` is the inner value, `rhs` the outer one.
     static func fold(_ lhs: Self, _ rhs: Self) -> Self
 }
 
-extension Fold {
-    /// Default: outer value wins is NOT the semantics; provide concrete impls.
+extension Bool: Fold {
+    /// The inner value wins (upstream `Fold for bool`).
+    public static func fold(_ lhs: Bool, _ rhs: Bool) -> Bool { lhs }
+}
+
+extension Optional: Fold where Wrapped: Fold {
+    /// `(some, some)` folds; an explicit inner `nil` is respected and
+    /// otherwise the inner value wins (upstream `Fold for Option<T>`).
+    public static func fold(_ lhs: Self, _ rhs: Self) -> Self {
+        switch (lhs, rhs) {
+        case let (.some(inner), .some(outer)):
+            return .some(Wrapped.fold(inner, outer))
+        case let (inner, _):
+            return inner
+        }
+    }
+}
+
+extension Smart: Fold where T: Fold {
+    /// `(custom, custom)` folds; an explicit inner `auto` is respected
+    /// (upstream `Fold for Smart<T>`).
+    public static func fold(_ lhs: Smart<T>, _ rhs: Smart<T>) -> Smart<T> {
+        switch (lhs, rhs) {
+        case let (.custom(inner), .custom(outer)):
+            return .custom(T.fold(inner, outer))
+        case let (inner, _):
+            return inner
+        }
+    }
+}
+
+/// A variant of fold for optional values where an inner `nil` means
+/// "unspecified" rather than "absent" (upstream `AlternativeFold`).
+public protocol AlternativeFold {
+    static func foldOr(_ lhs: Self, _ rhs: Self) -> Self
+}
+
+extension Optional: AlternativeFold where Wrapped: Fold {
+    /// `(some, some)` folds; otherwise whichever side is `some` wins.
+    public static func foldOr(_ lhs: Self, _ rhs: Self) -> Self {
+        switch (lhs, rhs) {
+        case let (.some(inner), .some(outer)):
+            return .some(Wrapped.fold(inner, outer))
+        case let (inner, outer):
+            return inner ?? outer
+        }
+    }
 }
 
 
@@ -724,5 +770,25 @@ public final class NativeRuleMap: @unchecked Sendable {
     /// Port of upstream `NativeRuleMap::get`.
     public func get(target: Target, content: Content) -> NativeShowRule? {
         rules[RuleKey(elem: content.elem, target: target)]
+    }
+}
+
+extension Array: Fold {
+    /// Outer items first, then inner appended (upstream `Fold for Vec<T>`).
+    public static func fold(_ inner: [Element], _ outer: [Element]) -> [Element] {
+        outer + inner
+    }
+}
+
+extension Spanned: Fold where T: Fold, S == Span {
+    /// Fold the values; the inner span wins unless it is detached
+    /// (upstream `Spanned::fold` — `self.span.or(outer.span)`).
+    public static func fold(
+        _ inner: Spanned<T, Span>, _ outer: Spanned<T, Span>
+    ) -> Spanned<T, Span> {
+        Spanned(
+            T.fold(inner.value, outer.value),
+            span: inner.span.or(outer.span)
+        )
     }
 }

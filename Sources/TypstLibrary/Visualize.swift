@@ -701,3 +701,174 @@ extension DashPattern: Hashable where T: Hashable, DT: Hashable {}
 extension Stroke: Equatable {}
 extension Stroke: @unchecked Sendable {}
 extension Stroke: Hashable {}
+
+// MARK: - Value casts (upstream `cast!` impls in `visualize/stroke.rs`)
+
+extension DashLength: Castable, FromValue where T == Length {
+    public static var input: CastInfo {
+        .union([.value(.str(Str("dot")), doc: ""), Length.input])
+    }
+    public static var output: CastInfo { input }
+
+    public static func castable(_ value: Value) -> Bool {
+        if case .str(let s) = value, s.value == "dot" { return true }
+        return Length.castable(value)
+    }
+
+    public static func fromValue(_ value: Value) -> HintedStrResult<Self> {
+        if case .str(let s) = value, s.value == "dot" {
+            return .success(.lineWidth)
+        }
+        return Length.fromValue(value).map { .length($0) }
+    }
+}
+
+extension DashPattern: Castable, IntoValue, FromValue
+where T == Length, DT == DashLength<Length> {
+
+    public static var input: CastInfo {
+        .union([
+            .type(Type.of(Str.self)),
+            .type(Type.of(ArrayValue.self)),
+            .type(Type.of(Dict.self)),
+        ])
+    }
+    public static var output: CastInfo { input }
+
+    public static func castable(_ value: Value) -> Bool {
+        switch value {
+        case .str, .array, .dict: return true
+        default: return false
+        }
+    }
+
+    public func intoValue() -> Value {
+        var dict = Dict()
+        dict.insert("array",
+                    .array(ArrayValue(items: array.map { $0.intoValue() })))
+        dict.insert("phase", phase.intoValue())
+        return .dict(dict)
+    }
+
+    /// Parse a `Vec<DashLength>` from an array value.
+    private static func parseArray(_ value: Value) throws -> [DashLength<Length>] {
+        guard case let .array(arr) = value else { throw error(value) }
+        var items: [DashLength<Length>] = []
+        for item in arr.items {
+            items.append(try DashLength<Length>.fromValue(item).get())
+        }
+        return items
+    }
+
+    static func parse(_ value: Value) throws -> DashPattern<Length, DashLength<Length>> {
+        if case let .str(s) = value {
+            guard let preset = preset(s.value) else {
+                throw HintedString("unknown dash pattern: \(s.value)")
+            }
+            return preset
+        }
+        if case .array = value {
+            return DashPattern(array: try parseArray(value), phase: .zero)
+        }
+        if case .dict(var dict) = value {
+            guard case .success(let arrayValue) = dict.take("array") else {
+                throw HintedString("missing key: \"array\"")
+            }
+            let array = try parseArray(arrayValue)
+            var phase = Length.zero
+            if case .success(let v) = dict.take("phase"),
+               case .success(let p) = Length.fromValue(v) {
+                phase = p
+            }
+            if case .failure(let e) = dict.finish(expected: ["array", "phase"]) {
+                throw HintedString(e.message)
+            }
+            return DashPattern(array: array, phase: phase)
+        }
+        throw error(value)
+    }
+
+    public static func fromValue(_ value: Value) -> HintedStrResult<Self> {
+        do { return .success(try parse(value)) }
+        catch let e as HintedString { return .failure(e) }
+        catch { return .failure(HintedString("\(error)")) }
+    }
+}
+
+extension Stroke: Castable, IntoValue, FromValue where T == Length {
+
+    public static var input: CastInfo {
+        .union([Length.input, Paint.input, .type(Type.of(Dict.self))])
+    }
+    public static var output: CastInfo { input }
+
+    public static func castable(_ value: Value) -> Bool {
+        if case .dict = value { return true }
+        return Length.castable(value) || Paint.castable(value)
+    }
+
+    /// All fields as a dict (upstream `cast!` default into_value).
+    public func intoValue() -> Value {
+        var dict = Dict()
+        dict.insert("paint", paint.intoValue())
+        dict.insert("thickness", thickness.intoValue())
+        dict.insert("cap", cap.intoValue())
+        dict.insert("join", join.intoValue())
+        dict.insert("dash", dash.intoValue())
+        dict.insert("miter-limit", miterLimit.intoValue())
+        return .dict(dict)
+    }
+
+    /// `Smart<T>` from a dict entry: missing → `.auto`, `auto` → `.auto`,
+    /// otherwise `.custom(T)` (upstream `take` helper in the stroke cast).
+    private static func takeSmart<W: FromValue & IntoValue>(
+        _ dict: inout Dict, _ key: String
+    ) throws -> Smart<W> {
+        guard case .success(let v) = dict.take(key) else { return .auto }
+        return try Smart<W>.fromValue(v).get()
+    }
+
+    static func parse(_ value: Value) throws -> Stroke<Length> {
+        // `thickness: Length` shorthand.
+        if case .success(let thickness) = Length.fromValue(value) {
+            return Stroke(thickness: .custom(thickness))
+        }
+        // Paint shorthand (color/gradient/tiling all cast to `Paint`).
+        if Paint.castable(value), case .success(let paint) = Paint.fromValue(value) {
+            return Stroke(paint: .custom(paint))
+        }
+        // Full dict form.
+        if case .dict(var dict) = value {
+            let paint: Smart<Paint> = try takeSmart(&dict, "paint")
+            let thickness: Smart<Length> = try takeSmart(&dict, "thickness")
+            let cap: Smart<LineCap> = try takeSmart(&dict, "cap")
+            let join: Smart<LineJoin> = try takeSmart(&dict, "join")
+            let dash: Smart<DashPattern<Length, DashLength<Length>>?> =
+                try takeSmart(&dict, "dash")
+            // `miter-limit` is a float upstream, mapped through `Ratio::new`.
+            var miterLimit: Smart<Ratio> = .auto
+            if case .success(let v) = dict.take("miter-limit") {
+                switch Smart<Double>.fromValue(v) {
+                case .success(.auto): miterLimit = .auto
+                case .success(.custom(let f)): miterLimit = .custom(Ratio(f))
+                case .failure(let e): throw e
+                }
+            }
+            if case .failure(let e) = dict.finish(
+                expected: ["paint", "thickness", "cap", "join", "dash", "miter-limit"]
+            ) {
+                throw HintedString(e.message)
+            }
+            return Stroke(
+                paint: paint, thickness: thickness, cap: cap, join: join,
+                dash: dash, miterLimit: miterLimit)
+        }
+        throw error(value)
+    }
+
+    public static func fromValue(_ value: Value) -> HintedStrResult<Self> {
+        do { return .success(try parse(value)) }
+        catch let e as HintedString { return .failure(e) }
+        catch { return .failure(HintedString("\(error)")) }
+    }
+}
