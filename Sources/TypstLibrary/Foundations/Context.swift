@@ -41,3 +41,32 @@ private func require<T>(_ value: T?) -> HintedStrResult<T> {
     }
     return .success(value)
 }
+
+/// Executes a `context` block. Port of `ContextElem` in
+/// `foundations/context.rs`.
+public struct ContextElem: NativeElement {
+    public static let info = ElementInfo(
+        name: "context",
+        fields: [FieldInfo(id: 0, name: "func", required: true)],
+        capabilities: [.locatable]
+    )
+
+    /// The function to call with the context.
+    public var `func`: Func
+
+    public var span: Span = .detached
+
+    public init(`func`: Func) { self.`func` = `func` }
+
+    /// Pack into content.
+    public func pack() -> Content { Content(self) }
+
+    public func field(_ id: UInt8) -> Value? {
+        id == 0 ? .function(`func`) : nil
+    }
+
+    public mutating func setField(_ id: UInt8, _ value: Value) throws {
+        guard id == 0, case let .function(f) = value else { return }
+        self.`func` = f
+    }
+}

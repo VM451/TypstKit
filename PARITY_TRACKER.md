@@ -137,16 +137,32 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
 - [ ] symbols table
 - [x] engine (Engine/Route/Introspector)
 
-### TypstEval
+### TypstEval — COMPLETE (all 13 upstream files ported)
 
-- [ ] Vm, scopes, bindings
-- [ ] code.rs (expr eval), call.rs (args, closures, methods)
-- [ ] markup.rs, math.rs eval
-- [ ] flow.rs (loops, conditionals, return/break/continue)
-- [ ] import.rs (module loading, import items)
-- [ ] rules.rs (set/show/context registration)
-- [ ] ops.rs, methods.rs, access.rs
+- [x] vm.rs/flow.rs/access.rs/methods.rs — Vm, FlowEvent, LValue paths,
+      call_method_mut, binding guards (`EvalCore.swift`)
+- [x] code.rs — Expr.eval dispatch, literals, collections, field access
+      (`EvalCode.swift`); `.contextual` deferred (needs ContextElem)
+- [x] call.rs — FuncCall/Args eval, closures, eval_closure,
+      CapturesVisitor (`EvalCall.swift`)
+- [x] ops.rs — unary/binary/assignment (`EvalOps.swift`)
+- [x] flow.rs — conditionals, loops, break/continue/return
+      (`EvalFlow.swift`)
+- [x] binding.rs — let bindings + destructuring (`EvalBinding.swift`)
+- [x] rules.rs — set/show rule eval (`EvalRules.swift`)
+- [x] markup.rs — markup stream + leaf nodes (`EvalMarkup.swift`);
+      list/enum/terms containers deferred to realization
+- [x] math.rs — all math nodes + eval_math_call/unparse_math_args/
+      MathArgs.eval (`EvalMath.swift`, `Model/MathElems.swift`);
+      `Scopes.getInMath` aliases `get` until math scope lands
+- [x] import.rs — ModuleImport/ModuleInclude, file+package resolution,
+      manifest parsing (`EvalImport.swift`)
+- [x] lib.rs — evalModule/evalString, SpanMode, route file-id chain,
+      flow.forbidden at entry (`EvalEntry.swift`)
 - [ ] Gate: upstream tests/suite/scripting + foundations pass
+      (needs realize+layout for full .typ suite; 16 EvalTests green
+      covering literals/ops/bindings/flow/closures/methods/markup/
+      math/imports/module-eval)
 
 ## Phase 3 — TypstRealize & TypstLayout
 

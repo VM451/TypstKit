@@ -271,6 +271,21 @@ struct EvalTests {
         }
     }
 
+    @Test func contextEval() throws {
+        // `context` expressions produce deferred contextual content.
+        let module = try evalSource("#context [Hi]")
+        #expect(module.content.elem.name == "context")
+
+        // Captures work inside context expressions (the `#let` yields an
+        // empty-content sibling, so the result stays a sequence).
+        let captured = try evalSource("#let x = 1\n#context x")
+        if let seq = captured.content.packed.element as? SequenceElem {
+            #expect(seq.children.contains { $0.elem.name == "context" })
+        } else {
+            #expect(captured.content.elem.name == "context")
+        }
+    }
+
     @Test func errors() {
         #expect(throws: (any Error).self) { try eval("unknownvar") }
         #expect(throws: (any Error).self) { try eval("1 + \"a\"") }

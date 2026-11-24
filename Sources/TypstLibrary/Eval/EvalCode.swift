@@ -125,8 +125,7 @@ extension Expr {
         case .closure(let v): value = try v.eval(&vm)
         case .moduleImport(let v): value = try v.eval(&vm)
         case .moduleInclude(let v): value = .content(try v.eval(&vm))
-        case .contextual:
-            throw evalNotImplemented(span, "context expression")
+        case .contextual(let v): value = .content(try v.eval(&vm))
         // Math nodes — ported in EvalMath.swift.
         case .equation(let v): value = .content(try v.eval(&vm))
         case .math(let v): value = .content(try v.eval(&vm))
@@ -486,4 +485,28 @@ func findBadDigits(base: NonDecimalBase,
 /// the stream evaluator lives in `EvalMarkup.swift`.
 func evalMarkup(_ vm: inout Vm, _ markup: Markup) throws -> Content {
     try markup.eval(&vm)
+}
+
+extension Contextual {
+    /// Evaluate a context expression into deferred contextual content.
+    /// Port of `Contextual::eval` in `code.rs`.
+    public func eval(_ vm: inout Vm) throws -> Content {
+        let body = self.body()
+
+        // Collect captured variables.
+        var visitor = CapturesVisitor(scopes: vm.scopes, capturer: .context)
+        visitor.visit(body.node)
+        let captured = visitor.finish()
+
+        // Define the closure.
+        let closure = Closure(
+            node: .context(body.node),
+            defaults: [],
+            captured: captured,
+            numPosParams: 0,
+            paramsSpan: .detached)
+
+        let theFunc = Func(closure: closure).spanned(body.span)
+        return ContextElem(func: theFunc).pack().spanned(body.span)
+    }
 }
