@@ -25,12 +25,16 @@ extension Bool: NativeType {
 
 extension Int64: NativeType {
     public static let typeInfo = TypeInfo(name: "int", longName: "integer",
-        title: "Integer", since: .forever)
+        title: "Integer", since: .forever,
+        constructor: { Func(native: intConstruct) },
+        scope: { intScope() })
 }
 
 extension Double: NativeType {
     public static let typeInfo = TypeInfo(name: "float", longName: "float",
-        title: "Float", since: .forever)
+        title: "Float", since: .forever,
+        constructor: { Func(native: floatConstruct) },
+        scope: { floatScope() })
 }
 
 extension Decimal: NativeType {

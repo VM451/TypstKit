@@ -74,8 +74,8 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
       constructor, 9 direct-call tests green), ~~array~~, ~~dict~~,
       type, ~~assert~~, eval, ~~repr~~, ~~panic~~, ~~version~~,
       ~~bytes~~, ~~label~~, ~~regex~~ (constructor scope), json, yaml,
-      toml, csv, xml, cbor, plugin, ~~datetime~~, ~~duration~~, float,
-      int, bool, none, auto (eval/plugin/target/sys deferred to eval
+      toml, csv, xml, cbor, plugin, ~~datetime~~, ~~duration~~, ~~float~~,
+      ~~int~~, bool, none, auto (eval/plugin/target/sys deferred to eval
       and loading milestones)
       — datetime/duration/version scopes + time-crate format engine
       ported (construct/today/display/accessors, unit methods, variadic
@@ -90,7 +90,14 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
       (ToBytes cast + len/at/slice with end/count mutual exclusion);
       label constructor; global `range` wired into foundations module;
       ops_compare default arm fixed to type names (upstream
-      mismatch! semantics); 109 direct-call tests green
+      mismatch! semantics); int scope (construct with base:/radix
+      parsing matching Rust from_str_radix incl. pos/neg overflow
+      kinds, max/min constants, signum, bit-and/or/xor/not/lshift/
+      rshift with logical param + saturation, from-bytes/to-bytes
+      with endian/size/signed); float scope (construct via ToFloat
+      union incl. ratio/decimal/string, inf/nan constants, is-nan/
+      is-infinite/signum with upstream NaN/-0.0 semantics, from-bytes/
+      to-bytes f64/f32 endian/size); 119 direct-call tests green
 - [ ] loading: data formats, packages, fonts
 - [ ] model: document/page/par/text/table/grid/list/enum/terms/
       heading/figure/equation/outlines/notes/bibliography/cite/
