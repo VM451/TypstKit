@@ -944,7 +944,7 @@ private func isValidInLabelLiteral(_ c: Unicode.Scalar) -> Bool {
 }
 
 /// Whether a string is valid in a label literal.
-func isValidLabelLiteralId(_ id: String) -> Bool {
+public func isValidLabelLiteralId(_ id: String) -> Bool {
     !id.isEmpty && id.unicodeScalars.allSatisfy(isValidInLabelLiteral)
 }
 

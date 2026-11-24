@@ -142,17 +142,141 @@ public typealias SourceResult<T> = Result<T, SourceDiagnostics>
 public typealias StrResult<T> = Result<T, StrError>
 
 /// The result of an operation that can produce a hinted string error.
-/// Mirrors `HintedStrResult<T>`.
-public typealias HintedStrResult<T> = Result<T, HintedError>
+/// Mirrors `HintedStrResult<T> = Result<T, HintedString>`.
+public typealias HintedStrResult<T> = Result<T, HintedString>
 
-/// A string error with additional hints.
-public struct HintedError: Error, Sendable {
-    public var message: String
-    public var hints: [String]
+/// A string message with hints.
+///
+/// Port of `HintedString` in `diag.rs`. Internally a vector whose first
+/// element is the message and the rest are hints.
+public struct HintedString: Error, Sendable, Hashable, CustomStringConvertible {
+    /// The message followed by the hints.
+    private var parts: [String]
 
-    public init(_ message: String, hints: [String] = []) {
-        self.message = message
-        self.hints = hints
+    /// Creates a new hinted string with the given message.
+    public init(_ message: String) {
+        parts = [message]
+    }
+
+    /// Creates a new hinted string with a message and hints.
+    public init(message: String, hints: [String]) {
+        parts = [message] + hints
+    }
+
+    /// A diagnostic message describing the problem.
+    public var message: String { parts[0] }
+
+    /// Additional hints to the user.
+    public var hints: [String] { Array(parts.dropFirst()) }
+
+    /// The full parts vector (message first, then hints).
+    public var allParts: [String] { parts }
+
+    /// Adds a single hint.
+    public mutating func hint(_ hint: String) {
+        parts.append(hint)
+    }
+
+    /// Adds a single hint, returning self.
+    public func withHint(_ hint: String) -> HintedString {
+        var copy = self
+        copy.hint(hint)
+        return copy
+    }
+
+    /// Adds user-facing hints.
+    public func withHints(_ hints: [String]) -> HintedString {
+        var copy = self
+        copy.parts.append(contentsOf: hints)
+        return copy
+    }
+
+    /// Convert this hinted string into a spanned error.
+    public func intoErrorAt(_ span: Span) -> SourceDiagnostic {
+        var diag = SourceDiagnostic.error(span, message)
+        for h in hints { diag.hint(h, at: span.diag) }
+        return diag
+    }
+
+    /// Convert this hinted string into a spanned warning.
+    public func intoWarningAt(_ span: Span) -> SourceDiagnostic {
+        var diag = SourceDiagnostic.warning(span, message)
+        for h in hints { diag.hint(h, at: span.diag) }
+        return diag
+    }
+
+    public var description: String { parts.joined(separator: "\n") }
+}
+
+extension HintedString: ExpressibleByStringLiteral {
+    public init(stringLiteral value: String) { self.init(value) }
+}
+
+/// Failure types convertible into source diagnostics at a span.
+/// Swift cannot express upstream's per-`Result`-alias trait impls, so the
+/// conversion lives on the failure type instead.
+public protocol AtFailure {
+    func atDiagnostics(_ span: Span) -> SourceDiagnostics
+}
+
+extension StrError: AtFailure {
+    public func atDiagnostics(_ span: Span) -> SourceDiagnostics {
+        SourceDiagnostics(SourceDiagnostic.error(span, message))
+    }
+}
+
+extension HintedString: AtFailure {
+    public func atDiagnostics(_ span: Span) -> SourceDiagnostics {
+        SourceDiagnostics(intoErrorAt(span))
+    }
+}
+
+/// Convert a `StrResult` or `HintedStrResult` to a `SourceResult` by adding
+/// span information. Port of the `At` trait in `diag.rs`.
+public protocol AtResult {
+    associatedtype Success
+    func at(_ span: Span) -> SourceResult<Success>
+}
+
+extension Result: AtResult where Failure: AtFailure {
+    public func at(_ span: Span) -> SourceResult<Success> {
+        mapError { $0.atDiagnostics(span) }
+    }
+}
+
+/// Failure types that can be enriched with a hint.
+public protocol HintConvertible {
+    func asHintedString() -> HintedString
+}
+
+extension StrError: HintConvertible {
+    public func asHintedString() -> HintedString { HintedString(message) }
+}
+
+extension HintedString: HintConvertible {
+    public func asHintedString() -> HintedString { self }
+}
+
+/// Enrich a `StrResult` or `HintedStrResult` with a hint.
+/// Port of the `Hint` trait in `diag.rs`.
+public protocol HintResult {
+    associatedtype Success
+    func hint(_ hint: String) -> HintedStrResult<Success>
+}
+
+extension Result: HintResult where Failure: HintConvertible {
+    public func hint(_ hint: String) -> HintedStrResult<Success> {
+        mapError { $0.asHintedString().withHint(hint) }
+    }
+}
+
+extension Result where Failure == SourceDiagnostics {
+    /// Attach a tracepoint to every diagnostic whose span lies outside
+    /// `span`.
+    public func traced(_ point: Tracepoint, at span: Span) -> SourceResult<Success> {
+        mapError { diags in
+            SourceDiagnostics(diags.diagnostics.map { $0.traced(point, at: span) })
+        }
     }
 }
 

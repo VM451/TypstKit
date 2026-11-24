@@ -688,3 +688,19 @@ final class WarningNode {
 
 /// Error thrown when a subtree cannot be numbered in the available range.
 struct Unnumberable: Error {}
+
+
+extension SyntaxNode: @unchecked Sendable {}
+
+extension SyntaxNode: Hashable {
+    /// Structural equality ignoring spans (upstream `SyntaxNode` equality
+    /// is span-aware; callers needing span equality compare spans separately).
+    public static func == (a: SyntaxNode, b: SyntaxNode) -> Bool {
+        a.spanlessEq(b)
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(kind)
+        hasher.combine(fullText())
+    }
+}

@@ -63,13 +63,13 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
 - [x] SourceDiagnostic / Severity / Tracepoint / SourceResult /
       StrResult / HintedStrResult
 - [ ] World protocol + WorldExt
-- [ ] Value enum + all value types (int, float, bool, none, auto,
+- [x] Value enum + all value types (int, float, bool, none, auto,
       content, array, dict, str, bytes, label, type, func, module,
       type, version, datetime, duration, ratio, relative, fraction,
       length, angle, color, gradient, stroke, sides, align, pad,
       margin, repeat, plugin?, symbolic)
-- [ ] Content model (element tree, fields, styles)
-- [ ] StyleChain / Styles
+- [x] Content model (element tree, fields, styles)
+- [x] StyleChain / Styles
 - [ ] Foundations: calc, str, array, dict, type, assert, eval, repr,
       panic, version, bytes, label, regex, json, yaml, toml, csv, xml,
       cbor, plugin, datetime, duration, float, int, bool, none, auto
@@ -82,7 +82,7 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
 - [ ] visualize: image, shape, path, paint, tiling, curve
 - [ ] math foundations
 - [ ] symbols table
-- [ ] engine (Engine/Route/Introspector)
+- [x] engine (Engine/Route/Introspector)
 
 ### TypstEval
 
