@@ -124,7 +124,7 @@ public final class Routines: @unchecked Sendable {
         (@Sendable (Func, Closure, inout Engine, Context, Args) -> SourceResult<Value>)?
 
     public init(
-        evalClosure: (@Sendable (Func, Closure, inout Engine, Context, Args) -> SourceResult<Value>)? = nil
+        evalClosure: (@Sendable (Func, Closure, inout Engine, Context, Args) -> SourceResult<Value>)? = evalClosureImpl
     ) {
         self.evalClosure = evalClosure
     }
@@ -154,10 +154,64 @@ public final class Sink: @unchecked Sendable {
 
 /// The call route for recursion detection.
 public struct Route: Sendable {
+    /// The parent route segment's length contribution.
+    /// Port of upstream `Route::len` — incremented by `extend`.
+    public private(set) var len: Int = 0
     public private(set) var calls: [CallInfo] = []
     public var isEmpty: Bool { calls.isEmpty }
     public mutating func push(_ info: CallInfo) { calls.append(info) }
     public mutating func pop() { _ = calls.popLast() }
+
+    /// Extend the route with a new segment of length 1.
+    /// Port of `Route::extend`.
+    public func extend() -> Route {
+        var copy = self
+        copy.len += 1
+        return copy
+    }
+
+    /// Whether the route's depth is within `depth`.
+    /// Port of `Route::within`.
+    public func within(_ depth: Int) -> Bool { len <= depth }
+
+    /// Maximum function call nesting depth.
+    public static let maxCallDepth = 80
+    /// Maximum show rule depth.
+    public static let maxShowRuleDepth = 64
+    /// Maximum layout depth.
+    public static let maxLayoutDepth = 72
+    /// Maximum HTML nesting depth.
+    public static let maxHTMLDepth = 72
+
+    /// Ensures that we are within the maximum function call depth.
+    /// Port of `Route::check_call_depth`.
+    public func checkCallDepth() -> StrResult<()> {
+        within(Route.maxCallDepth)
+            ? .success(())
+            : .failure(StrError("maximum function call depth exceeded"))
+    }
+
+    /// Ensures that we are within the maximum show rule depth.
+    public func checkShowDepth() -> HintedStrResult<()> {
+        within(Route.maxShowRuleDepth) ? .success(()) : .failure(HintedString(
+            message: "maximum show rule depth exceeded",
+            hints: ["maybe a show rule matches its own output",
+                    "maybe there are too deeply nested elements"]))
+    }
+
+    /// Ensures that we are within the maximum layout depth.
+    public func checkLayoutDepth() -> HintedStrResult<()> {
+        within(Route.maxLayoutDepth) ? .success(()) : .failure(HintedString(
+            message: "maximum layout depth exceeded",
+            hints: ["try to reduce the amount of nesting in your layout"]))
+    }
+
+    /// Ensures that we are within the maximum HTML depth.
+    public func checkHTMLDepth() -> HintedStrResult<()> {
+        within(Route.maxHTMLDepth) ? .success(()) : .failure(HintedString(
+            message: "maximum HTML depth exceeded",
+            hints: ["try to reduce the amount of nesting of your HTML"]))
+    }
 }
 
 /// A call in the route stack.

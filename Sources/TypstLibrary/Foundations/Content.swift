@@ -571,6 +571,20 @@ public struct Element: Sendable, Hashable {
     /// Look up field name by id.
     public func fieldName(_ id: UInt8) -> String? { info.fieldName(id) }
 
+    /// The style chain accessor for a settable field of the element.
+    /// Returns `nil` if the field is unknown or is not settable.
+    /// Port of `Element::settable_field_accessor`.
+    ///
+    /// NOTE: upstream's `get_from_styles` vtable entries embed per-field
+    /// default resolution. The port's `FieldInfo` does not yet carry default
+    /// values, so unset fields yield `.none`; elements with non-`none`
+    /// defaults need `FieldInfo` extended when the element model lands.
+    public func settableFieldAccessor(_ name: String) -> ((StyleChain) -> Value)? {
+        guard let id = fieldID(name), let info = field(id), info.settable
+        else { return nil }
+        return { chain in chain.get(self, id) ?? .none }
+    }
+
     /// Whether the element has the capability.
     public func can(_ capability: Capabilities) -> Bool {
         info.capabilities.contains(capability)

@@ -196,4 +196,12 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
 - [x] `flow.rs` — `FlowEvent` (break/continue/return+conditional) with `forbidden()` errors
 - [x] `access.rs` + `methods.rs` — `LValue` path enum (`.variable`/`.dictField`/`.methodSlot`) with read/write/mutate via `Scopes.getMut` + `Binding.write`; `access_dict` error taxonomy; `call_method_mut` (push/pop/insert/remove) + `call_method_access` slot resolution (first/last/at)
 - [x] Binding guards — `NormalBindingGuard`, `Engine.bindingGuard()`, `World.silentBindingGuard()`; `Library.features` unified to upstream `Features` (replaces `FeatureGuard`)
-- [ ] `code.rs`, `call.rs`, `markup.rs`, `math.rs`, `binding.rs`, `import.rs`, `ops.rs`, `rules.rs`, `lib.rs` — eval bodies pending (`Expr.eval` currently stubbed)
+- [x] `code.rs` — Expr.eval dispatch, literals, arrays/dicts, blocks, field access (`EvalCode.swift`)
+- [x] `call.rs` — FuncCall/Args eval, closures, eval_closure, CapturesVisitor (`EvalCall.swift`; math-call path deferred to EvalMath)
+- [x] `ops.rs` — unary/binary/assignment dispatch (`EvalOps.swift`)
+- [x] `flow.rs` — conditionals, loops, break/continue/return (`EvalFlow.swift`)
+- [x] `binding.rs` — let bindings + destructuring (`EvalBinding.swift`)
+- [x] `rules.rs` — set/show rule eval (`EvalRules.swift`)
+- [ ] `markup.rs`, `math.rs` eval
+- [ ] `import.rs` — module import/include
+- [ ] `lib.rs` — public entry points (`eval`, `eval_closure` wiring, `CapturesVisitor` IDE API)

@@ -36,6 +36,12 @@ public struct Vm {
         bind(ident, Binding(value: value, span: ident.span))
     }
 
+    /// Bind a value to a name without an identifier span.
+    /// Used for closure self-bindings and synthesized names.
+    public mutating func define(_ name: String, _ value: Value) {
+        scopes.top.bind(name, binding: Binding(value: value, span: .detached))
+    }
+
     /// Insert a binding into the current (top) scope.
     public mutating func bind(_ ident: TypstSyntax.Ident, _ binding: Binding) {
         let name = ident.get()

@@ -47,6 +47,20 @@ public struct Styles: Sendable, Hashable {
     }
 }
 
+extension Styles {
+    /// Add an origin span to all contained properties.
+    /// Port of `Styles::spanned`.
+    public func spanned(_ span: Span) -> Styles {
+        Styles(items.map { $0.value.mapStyleSpanned(span) })
+    }
+
+    /// Marks the styles as being allowed to be lifted up to the page level.
+    /// Port of `Styles::liftable`.
+    public func liftable() -> Styles {
+        Styles(items.map { $0.value.mapLiftable() })
+    }
+}
+
 extension Styles: Repr {
     public func repr() -> String { "styles(..)" }
 }
@@ -88,6 +102,28 @@ public enum Style: Sendable, Hashable {
         case let .property(p): return p.liftable
         case .recipe: return true
         case .revocation: return false
+        }
+    }
+
+    /// Return a copy with property spans set (recipes keep their own).
+    func mapStyleSpanned(_ span: Span) -> Style {
+        switch self {
+        case var .property(p):
+            p.span = span
+            return .property(p)
+        default:
+            return self
+        }
+    }
+
+    /// Return a copy with `liftable` set on properties.
+    func mapLiftable() -> Style {
+        switch self {
+        case var .property(p):
+            p.liftable = true
+            return .property(p)
+        default:
+            return self
         }
     }
 
@@ -164,14 +200,33 @@ public struct Recipe: Sendable, Hashable {
         self.outside = false
     }
 
-    /// Apply the recipe to content. Requires an engine for function calls —
-    /// returns the content directly for content transforms.
-    public func apply(to content: Content) -> HintedStrResult<Content> {
+    /// Apply the recipe to the given content.
+    /// Port of `Recipe::apply` in `styles.rs`.
+    public func apply(engine: inout Engine, context: Context,
+                      content: Content) throws -> Content {
+        var result = content
         switch transform {
-        case let .content(c): return .success(c)
-        case .function:
-            return .failure(HintedString("cannot apply function recipe without engine"))
+        case let .content(c):
+            result = c
+        case let .function(function):
+            // This already adds definition site of the show rule to the
+            // trace.
+            var call = function.callValue(
+                engine: &engine, context: context,
+                args: Args(span: span, values: [content]),
+                span: span)
+            // Also add the application site of the show rule to the trace.
+            if selector != nil {
+                call = call.traced(.show(content.`func`.name ?? content.name), at: span)
+            }
+            result = try unwrap(call).display
+        case let .style(styles):
+            result = result.styledWithMap(styles)
         }
+        if result.span == .detached {
+            result = result.spanned(span)
+        }
+        return result
     }
 }
 
@@ -183,6 +238,8 @@ public enum Transformation: Sendable, Hashable {
     case content(Content)
     /// Call a function with the matched content.
     case function(Func)
+    /// Apply a style map to the matched content (`show sel: set ..`).
+    case style(Styles)
 }
 
 /// Index of a recipe within a style list (for revocations).
@@ -310,4 +367,122 @@ public protocol Fold {
 
 extension Fold {
     /// Default: outer value wins is NOT the semantics; provide concrete impls.
+}
+
+
+extension Element {
+    /// Execute the set rule for the element and return the resulting
+    /// style map. Port of `Element::set` in `element.rs`.
+    ///
+    /// Elements with a custom `setImpl` use it; otherwise settable fields
+    /// are parsed generically from named arguments.
+    public func set(engine: inout Engine, args: inout Args) throws -> Styles {
+        var styles: Styles
+        if let setImpl = info.setImpl {
+            styles = try setImpl(&engine, &args)
+        } else {
+            var collected: [Style] = []
+            for field in info.fields where field.settable {
+                let named: Value? = try unwrap(args.named(field.name))
+                if let value = named {
+                    collected.insert(.property(Property(
+                        elem: self, field: field.id, value: value)), at: 0)
+                }
+            }
+            styles = Styles(collected)
+        }
+        try unwrap(args.finish())
+        return styles
+    }
+}
+
+extension Content {
+    /// Style this content with a recipe, eagerly applying it if possible.
+    /// Port of `Content::styled_with_recipe`.
+    public func styledWithRecipe(engine: inout Engine, context: Context,
+                                 recipe: Recipe) throws -> Content {
+        if recipe.selector == nil {
+            return try recipe.apply(engine: &engine, context: context,
+                                    content: self)
+        }
+        return styledWithMap(Styles([.recipe(recipe)]))
+    }
+}
+
+
+extension Transformation: Castable, FromValue {
+    public static var input: CastInfo { Content.input + Func.input }
+    public static var output: CastInfo { .any }
+
+    public static func castable(_ value: Value) -> Bool {
+        Content.castable(value) || Func.castable(value)
+    }
+
+    public static func fromValue(_ value: Value) -> HintedStrResult<Self> {
+        switch Content.fromValue(value) {
+        case .success(let content): return .success(.content(content))
+        case .failure:
+            switch Func.fromValue(value) {
+            case .success(let function): return .success(.function(function))
+            case .failure: break
+            }
+        }
+        return .failure(HintedString("expected content or function"))
+    }
+
+    // `Transformation::Style` has no `IntoValue` upstream (unreachable in
+    // the `cast!` macro) — only `FromValue` is needed for show-rule eval.
+}
+
+extension ShowableSelector: Castable, IntoValue, FromValue {
+    public static var input: CastInfo {
+        Symbol.input + Str.input + Label.input + Func.input + Regex.input
+            + Selector.input
+    }
+    public static var output: CastInfo { .type(Type.of(Selector.self)) }
+
+    public static func castable(_ value: Value) -> Bool {
+        Symbol.castable(value) || Str.castable(value) || Label.castable(value)
+            || Func.castable(value) || Regex.castable(value)
+            || Selector.castable(value)
+    }
+
+    public static func fromValue(_ value: Value) -> HintedStrResult<Self> {
+        if !castable(value) {
+            return .failure(HintedString("expected symbol, string, label, function, regex, or selector"))
+        }
+        return Selector.fromValue(value).flatMap { selector in
+            do {
+                try validateShowable(selector, nested: false)
+                return .success(ShowableSelector(selector))
+            } catch let error as HintedString {
+                return .failure(error)
+            } catch {
+                return .failure(HintedString("\(error)"))
+            }
+        }
+    }
+
+    public func intoValue() -> Value { .dynamic(selector) }
+}
+
+/// Validate that a selector can be used with `show`.
+/// Port of the `validate` closure in `ShowableSelector::from_value`.
+private func validateShowable(_ selector: Selector,
+                              nested: Bool) throws {
+    switch selector {
+    case .elem, .label:
+        break
+    case .regex where !nested:
+        break
+    case let .or(list), let .and(list):
+        for sel in list {
+            try validateShowable(sel, nested: true)
+        }
+    case .regex, .location, .can, .before, .after:
+        throw HintedString("this selector cannot be used with show")
+    case .within:
+        throw HintedString("this selector cannot currently be used with show")
+            .withHint("support for this is planned for the future")
+    }
 }
