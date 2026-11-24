@@ -493,10 +493,21 @@ public struct AlignElem: NativeElement {
         name: "align",
         title: "Alignment",
         fields: [
-            FieldInfo(id: 0, name: "alignment", required: true, settable: true),
+            FieldInfo(id: 0, name: "alignment", settable: true),
             FieldInfo(id: 1, name: "body", required: true),
         ],
-        capabilities: []
+        capabilities: [],
+        // `alignment` is `#[positional]` upstream, so the generated `Set`
+        // impl consumes it via `args.find`, not `args.named`.
+        setImpl: { _, args in
+            var collected: [Style] = []
+            if let value: Alignment = try args.findT() {
+                collected.append(.property(Property(
+                    elem: Element(AlignElem.self), field: 0,
+                    value: value.intoValue())))
+            }
+            return Styles(collected)
+        }
     )
 
     /// The alignment.
@@ -542,6 +553,7 @@ public struct ListElem: NativeElement, ListLike {
     public static let info = ElementInfo(
         name: "list",
         title: "Bullet List",
+        scope: ListElem.itemScope,
         fields: [
             FieldInfo(id: 0, name: "tight"),
             FieldInfo(id: 1, name: "indent", settable: true),
@@ -608,6 +620,8 @@ public struct ListElem: NativeElement, ListLike {
         case (0, let .bool(b)): tight = b
         case (1, let .length(l)): indent = l
         case (2, let .length(l)): bodyIndent = l
+        case (3, .auto): spacing = .auto
+        case (3, let .length(l)): spacing = .custom(l)
         case (5, let .array(a)):
             children = a.items.compactMap {
                 if case let .content(c) = $0, let item = c.packed(ListItem.self) {
@@ -629,18 +643,23 @@ public struct EnumElem: NativeElement, ListLike {
     public static let info = ElementInfo(
         name: "enum",
         title: "Numbered List",
+        scope: EnumElem.itemScope,
         fields: [
             FieldInfo(id: 0, name: "tight"),
             FieldInfo(id: 1, name: "start", settable: true),
             FieldInfo(id: 2, name: "full", settable: true),
             FieldInfo(id: 3, name: "reversed", settable: true),
-            FieldInfo(id: 4, name: "children", required: true),
+            FieldInfo(id: 4, name: "indent", settable: true),
+            FieldInfo(id: 5, name: "body-indent", settable: true),
+            FieldInfo(id: 6, name: "spacing", settable: true),
+            FieldInfo(id: 7, name: "number-align", settable: true),
+            FieldInfo(id: 8, name: "children", required: true),
         ],
         capabilities: [.locatable, .tagged]
     )
 
     /// Whether the list is tight.
-    public var tight: Bool = false
+    public var tight: Bool = true
 
     /// The start number.
     public var start: Smart<UInt64> = .auto
@@ -650,6 +669,18 @@ public struct EnumElem: NativeElement, ListLike {
 
     /// Whether the list is reversed.
     public var reversed: Bool = false
+
+    /// The indent of each item.
+    public var indent: Length = Length(Em(1.5))
+
+    /// Additional indent of the item's body.
+    public var bodyIndent: Length = Length(Em(0.5))
+
+    /// The spacing between items.
+    public var spacing: Smart<Length> = .auto
+
+    /// The alignment of the numbers.
+    public var numberAlign: Alignment = .h(.end)
 
     /// The list's children.
     public var children: [EnumItem]
@@ -674,7 +705,18 @@ public struct EnumElem: NativeElement, ListLike {
             return .auto
         case 2: return .bool(full)
         case 3: return .bool(reversed)
-        case 4:
+        case 4: return .length(indent)
+        case 5: return .length(bodyIndent)
+        case 6:
+            if case let .custom(l) = spacing { return .length(l) }
+            return .auto
+        case 7:
+            switch numberAlign {
+            case let .h(h): return .str(Str(h.rawValue))
+            case let .v(v): return .str(Str(v.rawValue))
+            case let .both(h, v): return .str(Str("\(h.rawValue + v.rawValue)"))
+            }
+        case 8:
             return .array(ArrayValue(children.map { .content(Content($0)) }))
         default: return nil
         }
@@ -683,9 +725,14 @@ public struct EnumElem: NativeElement, ListLike {
     public mutating func setField(_ id: UInt8, _ value: Value) throws {
         switch (id, value) {
         case (0, let .bool(b)): tight = b
+        case (1, let .int(n)): start = .custom(UInt64(clamping: n))
         case (2, let .bool(b)): full = b
         case (3, let .bool(b)): reversed = b
-        case (4, let .array(a)):
+        case (4, let .length(l)): indent = l
+        case (5, let .length(l)): bodyIndent = l
+        case (6, .auto): spacing = .auto
+        case (6, let .length(l)): spacing = .custom(l)
+        case (8, let .array(a)):
             children = a.items.compactMap {
                 if case let .content(c) = $0, let item = c.packed(EnumItem.self) {
                     return item
@@ -707,19 +754,36 @@ public struct TermsElem: NativeElement, ListLike {
     public static let info = ElementInfo(
         name: "terms",
         title: "Term List",
+        scope: TermsElem.itemScope,
         fields: [
             FieldInfo(id: 0, name: "tight"),
             FieldInfo(id: 1, name: "separator"),
-            FieldInfo(id: 2, name: "children", required: true),
+            FieldInfo(id: 2, name: "indent", settable: true),
+            FieldInfo(id: 3, name: "hanging-indent", settable: true),
+            FieldInfo(id: 4, name: "spacing", settable: true),
+            FieldInfo(id: 5, name: "children", required: true),
         ],
         capabilities: [.locatable, .tagged]
     )
 
     /// Whether the list is tight.
-    public var tight: Bool = false
+    public var tight: Bool = true
 
     /// The separator between term and description.
-    public var separator: Content = Content(TextElem(Str(": ")))
+    public var separator: Content = {
+        var h = HElem(amount: .rel(Rel(rel: .zero, abs: Length(Em(0.6)))))
+        h.weak = true
+        return Content(h)
+    }()
+
+    /// The indent of each item.
+    public var indent: Length = .zero
+
+    /// The hanging indent of each item's description.
+    public var hangingIndent: Length = Length(Em(2.0))
+
+    /// The spacing between items.
+    public var spacing: Smart<Length> = .auto
 
     /// The list's children.
     public var children: [TermItem]
@@ -740,7 +804,12 @@ public struct TermsElem: NativeElement, ListLike {
         switch id {
         case 0: return .bool(tight)
         case 1: return .content(separator)
-        case 2:
+        case 2: return .length(indent)
+        case 3: return .length(hangingIndent)
+        case 4:
+            if case let .custom(l) = spacing { return .length(l) }
+            return .auto
+        case 5:
             return .array(ArrayValue(children.map { .content(Content($0)) }))
         default: return nil
         }
@@ -750,7 +819,11 @@ public struct TermsElem: NativeElement, ListLike {
         switch (id, value) {
         case (0, let .bool(b)): tight = b
         case (1, let .content(c)): separator = c
-        case (2, let .array(a)):
+        case (2, let .length(l)): indent = l
+        case (3, let .length(l)): hangingIndent = l
+        case (4, .auto): spacing = .auto
+        case (4, let .length(l)): spacing = .custom(l)
+        case (5, let .array(a)):
             children = a.items.compactMap {
                 if case let .content(c) = $0, let item = c.packed(TermItem.self) {
                     return item

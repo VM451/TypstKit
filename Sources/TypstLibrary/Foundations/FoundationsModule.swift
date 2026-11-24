@@ -48,6 +48,11 @@ public func defineFoundations(_ global: Scope, inputs: Dict = Dict()) {
     // `loading/mod.rs` global functions.
     defineDataLoading(into: global)
 
+    // Elements — port of upstream `model/mod.rs`, `text/mod.rs`, and
+    // `layout/mod.rs` `define_elem` calls for the ported elements.
+    defineModelElements(into: global)
+    defineLayoutElements(into: global)
+
     global.resetCategory()
 }
 

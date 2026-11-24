@@ -786,12 +786,25 @@ public struct TextElem: NativeElement {
         
         fields: [
             FieldInfo(id: 0, name: "text", required: true, settable: false, hasDefault: false),
+            FieldInfo(id: 1, name: "lang", settable: true),
+            FieldInfo(id: 2, name: "region", settable: true),
         ],
         capabilities: [.locatable, .labelled, .counted, .queriable, .tagged]
     )
 
     /// The text.
     public var text: Str
+
+    /// The text's language.
+    ///
+    /// Upstream uses `Smart<Lang>` (`text/lang.rs`); stores the raw tag as a
+    /// string until the language module lands.
+    public var lang: Smart<Str> = .auto
+
+    /// The text's region.
+    ///
+    /// Upstream uses `Smart<Option<Region>>`; stores the raw tag as a string.
+    public var region: Smart<Str> = .auto
 
     public var span: Span = .detached
 
@@ -803,12 +816,27 @@ public struct TextElem: NativeElement {
     }
 
     public func field(_ id: UInt8) -> Value? {
-        id == 0 ? .str(text) : nil
+        switch id {
+        case 0: return .str(text)
+        case 1:
+            if case let .custom(l) = lang { return .str(l) }
+            return .auto
+        case 2:
+            if case let .custom(r) = region { return .str(r) }
+            return .auto
+        default: return nil
+        }
     }
 
     public mutating func setField(_ id: UInt8, _ value: Value) throws {
-        guard id == 0, case let .str(s) = value else { return }
-        text = s
+        switch (id, value) {
+        case (0, let .str(s)): text = s
+        case (1, .auto): lang = .auto
+        case (1, let .str(s)): lang = .custom(s)
+        case (2, .auto): region = .auto
+        case (2, let .str(s)): region = .custom(s)
+        default: break
+        }
     }
 }
 

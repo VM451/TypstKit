@@ -394,6 +394,15 @@ extension Element {
     /// Elements with a custom `setImpl` use it; otherwise settable fields
     /// are parsed generically from named arguments.
     public func set(engine: inout Engine, args: inout Args) throws -> Styles {
+        let styles = try setStyles(engine: &engine, args: &args)
+        try unwrap(args.finish())
+        return styles
+    }
+
+    /// The set-rule style map without consuming/finishing the arguments.
+    /// Used by element constructors (`text`, `page`) that call `set` and
+    /// then parse a body argument, mirroring upstream's `Self::set`.
+    func setStyles(engine: inout Engine, args: inout Args) throws -> Styles {
         var styles: Styles
         if let setImpl = info.setImpl {
             styles = try setImpl(&engine, &args)
@@ -408,7 +417,6 @@ extension Element {
             }
             styles = Styles(collected)
         }
-        try unwrap(args.finish())
         return styles
     }
 }

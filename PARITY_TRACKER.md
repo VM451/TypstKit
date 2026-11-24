@@ -232,7 +232,10 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
 - [x] Style-chain infra — `entries`/`links`/`recipes`/`suffix`/`trunk`/`chain`/`outside`/`pop`, identity `==`, `Styles.apply`/`applyOne`/`lazyItems` init, `NativeShowRule`/`NativeRuleMap` (`Foundations/Styles.swift`)
 - [x] Elements — `ParElem`, `ListElem`/`EnumElem`/`TermsElem` (+`ListLike`/`ListItemLike`), `CiteElem`/`CiteGroup`, `HElem`/`VElem`, `PageElem`, `PagebreakElem`, `AlignElem`, `BoxElem`, `InlineElem`/`InlineItem`, `DocumentElem`+`DocumentFormat`, capability protocols (`Synthesize`/`ShowSet`/`Mathy`/`Unlabellable` as `*Capable` Swift protocols) (`Model/RealizeElems.swift`)
 - [x] Engine wiring — `Routines.realize` default impl, `Engine.delay`, `Route.increase/decrease/checkShowDepth`, `measureLocation` hook
-- [ ] `DocumentInfo::populate`/`populate_locale` + `DocumentFormatOptions::populate` bodies (need full `DocumentElem`/`TextElem` fields)
+- [x] `DocumentInfo::populate`/`populate_locale` + `DocumentFormatOptions::populate` bodies (`RealizeTypes.swift`; `TextElem` gained `lang`/`region` fields)
+- [x] Element constructors — `#[elem]`-generated `Construct` impls + hand-written `TextElem`/`PageElem`/`LinkElem` constructs, field-parse order (`parse`→custom, `variadic`→`all`, `required`→`expect`, `positional`→`find`, else `named`), item casts (`ListItem`/`EnumItem`/`TermItem` content-unpack), `list.item`/`enum.item`/`terms.item` nested scopes, global registration of model+layout elements, alignment/direction prelude values (`ltr`/`rtl`/`ttb`/`btt`, `start`/`left`/`center`/`right`/`end`/`top`/`horizon`/`bottom`) (`Model/ElementConstructs.swift`, `Foundations/Styles.swift` `setStyles` split)
+- [ ] `#[parse]`-custom settable fields beyond `AlignElem.alignment` (positional `find` via `ElementInfo.setImpl`; more needed as layout elements land)
+- [ ] `#[fold]` fields — `Fold`/`getFolded`/`Alignment.fold` exist but `getFolded` has no callers yet; wire into style resolution when fold-dependent fields land
 - [ ] `HtmlElem` whitespace-collapsing branch in space transitions (needs HTML export)
 - [ ] Native show rules registration for built-in elements (bibliography, outline, etc.)
 - [ ] Measure-mode location resolution via `engine.introspect` (introspection milestone)

@@ -98,14 +98,58 @@ public struct DocumentInfo: Sendable, Hashable {
     /// Populate this document info with details from the given styles.
     /// Port of upstream `DocumentInfo::populate`.
     public mutating func populate(_ styles: StyleChain) {
-        // Requires `DocumentElem` fields — populated when the document
-        // element milestone lands.
+        let doc = Element(DocumentElem.self)
+        if styles.has(doc, 0),
+           case let .content(c)? = styles.getValue(doc, 0) {
+            title = Str(c.plainText)
+        }
+        if styles.has(doc, 1),
+           case let .array(a)? = styles.getValue(doc, 1) {
+            author = a.items.compactMap {
+                if case let .str(s) = $0 { return s }
+                return nil
+            }
+        }
+        if styles.has(doc, 2),
+           case let .content(c)? = styles.getValue(doc, 2) {
+            description = Str(c.plainText)
+        }
+        if styles.has(doc, 3),
+           case let .array(a)? = styles.getValue(doc, 3) {
+            keywords = a.items.compactMap {
+                if case let .str(s) = $0 { return s }
+                return nil
+            }
+        }
+        if styles.has(doc, 4) {
+            switch styles.getValue(doc, 4) {
+            case .auto?: date = .auto
+            case .none?: date = .custom(nil)
+            case let .datetime(d)?: date = .custom(d)
+            default: break
+            }
+        }
     }
 
     /// Populate this document info with locale details from the given styles.
     /// Port of upstream `DocumentInfo::populate_locale`.
     public mutating func populateLocale(_ styles: StyleChain) {
-        // Requires `TextElem::lang`/`region` fields.
+        if case .custom = locale { return }
+
+        var locale = DocumentLocale()
+        var hasLocale = false
+        let text = Element(TextElem.self)
+        if styles.has(text, 1),
+           case let .str(s)? = styles.getValue(text, 1) {
+            locale.lang = s
+            hasLocale = true
+        }
+        if styles.has(text, 2),
+           case let .str(s)? = styles.getValue(text, 2) {
+            locale.region = s
+            hasLocale = true
+        }
+        self.locale = hasLocale ? .custom(locale) : .auto
     }
 }
 
