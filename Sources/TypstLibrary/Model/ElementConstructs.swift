@@ -842,6 +842,8 @@ func defineModelElements(into global: Scope) {
     defineElement(into: global, SubElem.self)
     defineElement(into: global, SuperElem.self)
     defineElement(into: global, SmallcapsElem.self)
+    defineElement(into: global, DividerElem.self)
+    defineElement(into: global, QuoteElem.self)
 }
 
 /// Port of upstream `layout/mod.rs` element registration for the elements
