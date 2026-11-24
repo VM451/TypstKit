@@ -187,3 +187,87 @@ struct ShapeElementTests {
         }
     }
 }
+
+/// Tests for the curve element definitions ported from
+/// `typst-library/src/visualize/curve.rs`.
+@Suite("CurveElements")
+struct CurveElementTests {
+    private func markup(_ source: String) throws -> Content {
+        let node = parse(source)
+        guard let markup = node.cast(Markup.self) else {
+            throw SourceDiagnostics(SourceDiagnostic.error(
+                Span.detached, "test harness: expected markup"))
+        }
+        let world = MockWorld()
+        let engine = Engine(world: world)
+        var vm = Vm(
+            engine: engine,
+            context: Context(),
+            scopes: Scopes(base: world.library.value.scope),
+            inspected: nil)
+        return try markup.eval(&vm)
+    }
+
+    private func firstElem(_ content: Content) -> PackedElement? {
+        if let seq = content.packed.element as? SequenceElem,
+           let first = seq.children.first {
+            return first.packed
+        }
+        return content.packed
+    }
+
+    private func pt(_ length: Length) -> Double { length.abs.toPt() }
+
+    @Test func curveComponents() throws {
+        let content = try markup(
+            "#curve(curve.move((0pt, 0pt)), curve.line((10pt, 10pt)), curve.close())")
+        let curve = try #require(firstElem(content)?.element as? CurveElem)
+        #expect(curve.components.count == 3)
+        guard case .move(let moveContent) = curve.components[0],
+              case .line(let lineContent) = curve.components[1],
+              case .close(let closeContent) = curve.components[2] else {
+            Issue.record("unexpected component kinds"); return
+        }
+        let move = try #require(moveContent.packed.element as? CurveMove)
+        #expect(pt(move.start.x.abs) == 0)
+        #expect(move.relative == false)
+        let line = try #require(lineContent.packed.element as? CurveLine)
+        #expect(pt(line.end.x.abs) == 10)
+        #expect(pt(line.end.y.abs) == 10)
+        _ = closeContent
+    }
+
+    @Test func curveComponentArgs() throws {
+        // Relative flag + quad/cubic optionals.
+        let content = try markup(
+            "#curve(curve.line((5pt, 5pt), relative: true), "
+            + "curve.quad(auto, (3pt, 3pt)), "
+            + "curve.cubic(none, (1pt, 1pt), (2pt, 2pt)), "
+            + "curve.close(mode: \"straight\"))")
+        let curve = try #require(firstElem(content)?.element as? CurveElem)
+        #expect(curve.components.count == 4)
+        guard case .line(let lineContent) = curve.components[0],
+              case .quad(let quadContent) = curve.components[1],
+              case .cubic(let cubicContent) = curve.components[2],
+              case .close(let closeContent) = curve.components[3] else {
+            Issue.record("unexpected component kinds"); return
+        }
+        let line = try #require(lineContent.packed.element as? CurveLine)
+        #expect(line.relative == true)
+        let quad = try #require(quadContent.packed.element as? CurveQuad)
+        #expect(quad.control.isAuto)
+        let cubic = try #require(cubicContent.packed.element as? CurveCubic)
+        #expect(cubic.controlStart == nil)
+        #expect(cubic.controlEnd != nil)
+        let close = try #require(closeContent.packed.element as? CurveClose)
+        #expect(close.mode == .straight)
+    }
+
+    @Test func curveRejectsNonComponent() throws {
+        // Plain content is not a curve component — the variadic cast
+        // rejects it eagerly, matching upstream `TryFrom<Content>`.
+        #expect(throws: (any Error).self) {
+            _ = try markup("#curve([x])")
+        }
+    }
+}

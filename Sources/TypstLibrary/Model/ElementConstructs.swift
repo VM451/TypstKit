@@ -885,4 +885,5 @@ func defineVisualizeElements(into global: Scope) {
     defineElement(into: global, EllipseElem.self)
     defineElement(into: global, CircleElem.self)
     defineElement(into: global, PolygonElem.self)
+    defineElement(into: global, CurveElem.self)
 }
