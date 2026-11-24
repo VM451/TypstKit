@@ -219,7 +219,7 @@ struct XmlParser {
         // At '<' of the start tag.
         advance() // consume '<'
         let qname = try readName()
-        var local = splitQName(qname)
+        let local = splitQName(qname)
 
         // Parse attributes, collecting xmlns bindings for this element.
         var rawAttrs: [(String, String)] = []

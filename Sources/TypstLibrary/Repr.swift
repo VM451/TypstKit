@@ -190,12 +190,11 @@ func rustDisplayFloat(_ value: Double) -> String {
     }
     // Expand "d.ddde±X" into plain decimal.
     var mantissa = String(s[..<eIdx])
-    var exp = Int(s[s.index(after: eIdx)...]) ?? 0
+    let exp = Int(s[s.index(after: eIdx)...]) ?? 0
     var neg = false
     if mantissa.hasPrefix("-") { neg = true; mantissa.removeFirst() }
     let dotIdx = mantissa.firstIndex(of: ".")
     let intDigits = dotIdx.map { mantissa.distance(from: mantissa.startIndex, to: $0) } ?? mantissa.count
-    let fracDigits = dotIdx.map { d in mantissa.distance(from: mantissa.index(after: d), to: mantissa.endIndex) } ?? 0
     let digits = mantissa.filter { $0 != "." }
     // Position of decimal point after applying exponent.
     let pointPos = intDigits + exp

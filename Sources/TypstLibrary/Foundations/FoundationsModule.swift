@@ -4,14 +4,13 @@ import TypstUtils
 // Port of `foundations/mod.rs` — registers the foundations types,
 // functions, and the `calc` module into the global scope.
 //
-// `eval`, `plugin`, `target`, and the `sys` module are registered by later
-// milestones (they depend on the evaluator, dynamic loading, the contextual
-// style chain, and compilation inputs respectively).
+// `eval` and `plugin` are registered by later milestones (they depend on
+// the evaluator and dynamic loading respectively).
 
 /// Define all foundations in the global scope.
 ///
 /// Port of `foundations::define` in `mod.rs`.
-public func defineFoundations(_ global: Scope) {
+public func defineFoundations(_ global: Scope, inputs: Dict = Dict()) {
     global.defineType(Bool.self)
     global.defineType(Int64.self)
     global.defineType(Double.self)
@@ -37,11 +36,13 @@ public func defineFoundations(_ global: Scope) {
     global.defineFunc(reprFunc)
     global.defineFunc(panicFunc)
     global.defineFunc(assertFunc)
+    global.defineFunc(targetFunc)
 
     // Upstream `lib.rs` defines `range` globally (also in `array`'s scope).
     global.defineFunc(arrayRange)
 
     global.define("calc", .module(calcModule()))
+    global.define("sys", .module(sysModule(inputs: inputs)))
 
     // Data loading (`read`, `csv`, `json`) — port of upstream
     // `loading/mod.rs` global functions.

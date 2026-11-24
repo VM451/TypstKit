@@ -143,7 +143,7 @@ func jsonFloat(_ f: Double) -> String {
     var s = String(f)
     // Normalize exponent: "1e+300" → "1e300", "1e-05" → "1e-5".
     if let eIdx = s.firstIndex(of: "e") {
-        var mantissa = String(s[..<eIdx])
+        let mantissa = String(s[..<eIdx])
         var exp = String(s[s.index(after: eIdx)...])
         if exp.hasPrefix("+") { exp.removeFirst() }
         while exp.hasPrefix("0"), exp.count > 1 { exp.removeFirst() }

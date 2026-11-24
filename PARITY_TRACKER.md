@@ -79,7 +79,9 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
       bool, none, auto; content methods (func/has/at/
       fields/location); location value type (scope methods
       deferred to introspection) (eval/plugin/target/sys deferred to eval
-      and loading milestones)
+      and loading milestones); ~~sys~~ module (version + inputs via
+      Library.withInputs); ~~target~~ (Target cast enum + TargetElem +
+      contextual target() — plugin deferred: needs wasm runtime)
       — datetime/duration/version scopes + time-crate format engine
       ported (construct/today/display/accessors, unit methods, variadic
       version + at/fields); World.today now takes `Duration?` and

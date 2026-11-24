@@ -135,7 +135,7 @@ struct Utf16ByteMapper {
         // Find the nearest preceding boundary.
         guard let t = tableBox.map else { return offset }
         var best = 0
-        for (k, v) in t where k <= offset && k > best { best = k }
+        for (k, _) in t where k <= offset && k > best { best = k }
         return t[best] ?? 0
     }
 

@@ -78,11 +78,24 @@ public struct Library: Sendable, Hashable {
     /// Host-installed evaluation/realization/layout routines.
     public var routines: Routines
 
+    /// Inputs visible through `sys.inputs` (upstream
+    /// `LibraryBuilder::with_inputs`).
+    public var inputs: Dict
+
     public init(scope: Scope, features: FeatureGuard = FeatureGuard(),
-                routines: Routines = Routines()) {
+                routines: Routines = Routines(), inputs: Dict = Dict()) {
         self.scope = scope
         self.features = features
         self.routines = routines
+        self.inputs = inputs
+    }
+
+    /// Configure the inputs visible through `sys.inputs`.
+    /// Port of `LibraryBuilder::with_inputs`.
+    public func withInputs(_ inputs: Dict) -> Library {
+        var copy = self
+        copy.inputs = inputs
+        return copy
     }
 }
 

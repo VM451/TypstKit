@@ -259,7 +259,7 @@ public struct Content: Sendable {
     public static func + (lhs: Content, rhs: Content) -> Content {
         var lhs = lhs
         if var seq = lhs.packed.element as? SequenceElem {
-            if var rhsSeq = rhs.packed.element as? SequenceElem {
+            if let rhsSeq = rhs.packed.element as? SequenceElem {
                 seq.children.append(contentsOf: rhsSeq.children)
             } else {
                 seq.children.append(rhs)
