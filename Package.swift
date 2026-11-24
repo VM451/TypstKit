@@ -74,7 +74,8 @@ let package = Package(
         ),
         .testTarget(
             name: "TypstSyntaxTests",
-            dependencies: ["TypstSyntax"]
+            dependencies: ["TypstSyntax"],
+            resources: [.copy("Suite")]
         ),
         .testTarget(
             name: "AnyTypTests",

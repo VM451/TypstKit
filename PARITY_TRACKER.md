@@ -50,7 +50,11 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
       checks, exponential renumbering)
 - [x] package.rs remainder (PackageManifest/PackageInfo/TemplateInfo/ToolInfo/TomlValue model + validate; TOML decode deferred to TypstLibrary)
 - [x] highlight.rs (HighlightTag, highlight(), highlightHTML; upstream test ported)
-- [ ] Gate: upstream tests/suite/syntax ports pass
+- [x] Gate: upstream tests/suite/syntax ports pass
+      (SyntaxSuiteTests: 10 vendored corpus files, 38 sections; every
+      emitted parse diagnostic matches annotations exactly — kind, byte
+      range, message. Eval-stage annotations tracked in
+      `expectedUnevaluated` until TypstEval lands.)
 
 ## Phase 2 — TypstLibrary & TypstEval
 
