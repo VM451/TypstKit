@@ -912,7 +912,7 @@ private func isSpace(_ character: Unicode.Scalar, mode: SyntaxMode) -> Bool {
 }
 
 /// Whether a string is a valid Typst identifier.
-func isIdent(_ string: String) -> Bool {
+public func isIdent(_ string: String) -> Bool {
     let scalars = string.unicodeScalars
     guard let first = scalars.first, isIdStart(first) else { return false }
     return scalars.dropFirst().allSatisfy(isIdContinue)

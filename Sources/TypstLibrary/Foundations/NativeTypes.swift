@@ -70,7 +70,8 @@ extension Fr: NativeType {
 
 extension Symbol: NativeType {
     public static let typeInfo = TypeInfo(name: "symbol", longName: "symbol",
-        title: "Symbol", since: .forever)
+        title: "Symbol", since: .forever,
+        constructor: { Func(native: symbolConstruct) })
 }
 
 extension Version: NativeType {
@@ -150,7 +151,8 @@ extension Args: NativeType {
 
 extension Type: NativeType {
     public static let typeInfo = TypeInfo(name: "type", longName: "type",
-        title: "Type", since: .forever)
+        title: "Type", since: .version([0, 8, 0]),
+        constructor: { Func(native: typeConstruct) })
 }
 
 extension Module: NativeType {

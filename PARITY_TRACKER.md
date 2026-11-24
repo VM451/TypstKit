@@ -75,7 +75,8 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
       type, ~~assert~~, eval, ~~repr~~, ~~panic~~, ~~version~~,
       ~~bytes~~, ~~label~~, ~~regex~~ (constructor scope), json, yaml,
       toml, csv, xml, cbor, plugin, ~~datetime~~, ~~duration~~, ~~float~~,
-      ~~int~~, ~~decimal~~, bool, none, auto (eval/plugin/target/sys deferred to eval
+      ~~int~~, ~~decimal~~, ~~type~~, ~~symbol~~ (constructor),
+      bool, none, auto (eval/plugin/target/sys deferred to eval
       and loading milestones)
       — datetime/duration/version scopes + time-crate format engine
       ported (construct/today/display/accessors, unit methods, variadic
@@ -102,7 +103,10 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
       is-integer/abs/floor/ceil/trunc/fract/round; Decimal.MIN/MAX fixed
       to real rust_decimal bounds; float->decimal now uses exact binary
       expansion rounded to 28 sig digits — may differ 1 ulp in last
-      digit vs rust_decimal); 123 direct-call tests green
+      digit vs rust_decimal); type() constructor returns value's type;
+      symbol() constructor with full variant validation (grapheme
+      check, ident modifiers, canonical dedup with ordering hint);
+      isIdent made public in TypstSyntax; 126 direct-call tests green
 - [ ] loading: data formats, packages, fonts
 - [ ] model: document/page/par/text/table/grid/list/enum/terms/
       heading/figure/equation/outlines/notes/bibliography/cite/
