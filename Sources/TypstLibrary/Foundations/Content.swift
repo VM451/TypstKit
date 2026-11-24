@@ -788,9 +788,13 @@ public struct TextElem: NativeElement {
             FieldInfo(id: 0, name: "text", required: true, settable: false, hasDefault: false),
             FieldInfo(id: 1, name: "lang", settable: true),
             FieldInfo(id: 2, name: "region", settable: true),
+            FieldInfo(id: 3, name: "size", settable: true),
         ],
         capabilities: [.locatable, .labelled, .counted, .queriable, .tagged]
     )
+
+    /// Field id of the `size` field (upstream `TextElem::size`).
+    public static let sizeFieldID: UInt8 = 3
 
     /// The text.
     public var text: Str
@@ -805,6 +809,10 @@ public struct TextElem: NativeElement {
     ///
     /// Upstream uses `Smart<Option<Region>>`; stores the raw tag as a string.
     public var region: Smart<Str> = .auto
+
+    /// The text size (upstream `TextSize`, default 11pt, folded across set
+    /// rules by multiplication of the linear functions).
+    public var size: TextSize = .default
 
     public var span: Span = .detached
 
@@ -824,6 +832,7 @@ public struct TextElem: NativeElement {
         case 2:
             if case let .custom(r) = region { return .str(r) }
             return .auto
+        case 3: return .length(size.inner)
         default: return nil
         }
     }
@@ -835,6 +844,10 @@ public struct TextElem: NativeElement {
         case (1, let .str(s)): lang = .custom(s)
         case (2, .auto): region = .auto
         case (2, let .str(s)): region = .custom(s)
+        case (3, let .length(l)):
+            guard case .success(let ts) = TextSize.fromValue(.length(l))
+            else { break }
+            size = ts
         default: break
         }
     }

@@ -35,7 +35,7 @@ func fields_field(_ value: Value, _ field: String) -> HintedStrResult<Value> {
         default: return missing()
         }
     case let .dynamic(dynamic):
-        if let stroke = dynamic.downcast(Stroke.self) {
+        if let stroke = dynamic.downcast(Stroke<Length>.self) {
             switch field {
             case "paint": return .success(stroke.paint.intoValue())
             case "thickness": return .success(stroke.thickness.intoValue())
@@ -67,7 +67,7 @@ func fieldsOn(_ ty: Type) -> [String] {
         return ["em", "abs"]
     } else if ty == Type.of(Rel<Length>.self) {
         return ["ratio", "length"]
-    } else if ty == Type.of(Stroke.self) {
+    } else if ty == Type.of(Stroke<Length>.self) {
         return ["paint", "thickness", "cap", "join", "dash", "miter-limit"]
     } else if ty == Type.of(Alignment.self) {
         return ["x", "y"]
@@ -78,7 +78,7 @@ func fieldsOn(_ ty: Type) -> [String] {
 /// `stroke.dash` field value — `Smart<Option<DashPattern>>` rendered
 /// without requiring the full `DashPattern` cast (which lands with the
 /// stroke port).
-private func dashFieldValue(_ dash: Smart<DashPattern<Length>?>) -> Value {
+private func dashFieldValue(_ dash: Smart<DashPattern<Length, DashLength<Length>>?>) -> Value {
     switch dash {
     case .auto: return .auto
     case let .custom(pattern):

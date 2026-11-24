@@ -597,3 +597,50 @@ extension Length {
 
 extension Rel: @unchecked Sendable {}
 extension Rel: Hashable where T: Hashable {}
+
+// MARK: - Resolve
+
+extension Em: Resolve {
+    public typealias Output = Abs
+
+    /// Resolve against the text size (upstream `Resolve for Em`).
+    public func resolve(_ styles: StyleChain) -> Abs {
+        isZero() ? .zero : at(styles.textSize())
+    }
+}
+
+extension Length: Resolve {
+    public typealias Output = Abs
+
+    /// Resolve the em component against the text size
+    /// (upstream `Resolve for Length`).
+    public func resolve(_ styles: StyleChain) -> Abs {
+        abs + em.resolve(styles)
+    }
+}
+
+extension Smart: Resolve where T: Resolve {
+    public typealias Output = Smart<T.Output>
+
+    /// Resolve a smart value (upstream `Resolve for Smart<T>`).
+    public func resolve(_ styles: StyleChain) -> Smart<T.Output> {
+        map { $0.resolve(styles) }
+    }
+}
+
+extension Optional: Resolve where Wrapped: Resolve {
+    public typealias Output = Wrapped.Output?
+
+    /// Resolve an optional value (upstream `Resolve for Option<T>`).
+    public func resolve(_ styles: StyleChain) -> Wrapped.Output? {
+        self?.resolve(styles)
+    }
+}
+
+extension Length: Fold {
+    /// Lengths don't fold — the inner value wins
+    /// (upstream `Fold for Length`).
+    public static func fold(_ inner: Length, _ outer: Length) -> Length {
+        inner
+    }
+}

@@ -302,27 +302,127 @@ public enum LineJoin: String, Sendable, Hashable, CaseIterable {
 }
 
 /// A dash pattern.
-public struct DashPattern<T: Numeric> {
-    /// The dash array (alternating dash/gap lengths).
-    public var array: [T]
+///
+/// Port of `DashPattern` in `visualize/stroke.rs`. `T` is the phase type;
+/// `DT` is the dash-array element type (`DashLength<T>` before resolution,
+/// `Abs` after).
+public struct DashPattern<T: Numeric, DT> {
+    /// The dash array.
+    public var array: [DT]
     /// The dash phase (offset).
     public var phase: T
 
-    public init(array: [T], phase: T) {
+    public init(array: [DT], phase: T) {
         self.array = array
         self.phase = phase
     }
 }
 
+/// The length of a dash in a line dash pattern.
+///
+/// Port of `DashLength` in `visualize/stroke.rs`.
+public enum DashLength<T: Numeric> {
+    /// A length equal to the line width (the `"dot"` dash).
+    case lineWidth
+    /// An explicit length.
+    case length(T)
+
+    /// Resolve `lineWidth` entries against the stroke's thickness
+    /// (upstream `DashLength::finish`).
+    public func finish(_ lineWidth: T) -> T {
+        switch self {
+        case .lineWidth: return lineWidth
+        case let .length(l): return l
+        }
+    }
+
+    /// Map the contained length with `f` (upstream `Stroke::map` helper).
+    public func map<U: Numeric>(_ f: (T) -> U) -> DashLength<U> {
+        switch self {
+        case .lineWidth: return .lineWidth
+        case let .length(l): return .length(f(l))
+        }
+    }
+}
+
+extension DashLength: IntoValue where T: IntoValue {
+    public func intoValue() -> Value {
+        switch self {
+        case .lineWidth: return .str(Str("dot"))
+        case let .length(l): return l.intoValue()
+        }
+    }
+}
+
+extension DashLength: Resolve where T == Length {
+    public typealias Output = DashLength<Abs>
+
+    public func resolve(_ styles: StyleChain) -> DashLength<Abs> {
+        switch self {
+        case .lineWidth: return .lineWidth
+        case let .length(l): return .length(l.resolve(styles))
+        }
+    }
+}
+
+extension DashPattern: Resolve where T == Length, DT == DashLength<Length> {
+    public typealias Output = DashPattern<Abs, DashLength<Abs>>
+
+    /// Resolve all lengths (upstream `Resolve for DashPattern`).
+    public func resolve(_ styles: StyleChain) -> DashPattern<Abs, DashLength<Abs>> {
+        DashPattern<Abs, DashLength<Abs>>(
+            array: array.map { $0.resolve(styles) },
+            phase: phase.resolve(styles)
+        )
+    }
+}
+
+extension DashPattern where T == Length, DT == DashLength<Length> {
+    /// Create a length-based dash entry from an absolute length
+    /// (upstream `From<Abs> for DashLength`).
+    static func absEntry(_ abs: Abs) -> DashLength<Length> {
+        .length(Length(abs: abs, em: .zero))
+    }
+
+    /// The named dash patterns (upstream preset table in `stroke.rs`).
+    /// Returns `nil` for unknown names; `"solid"` yields an empty pattern.
+    public static func preset(_ name: String) -> DashPattern<Length, DashLength<Length>>? {
+        func pattern(_ array: [DashLength<Length>]) -> DashPattern<Length, DashLength<Length>> {
+            DashPattern(array: array, phase: .zero)
+        }
+        switch name {
+        case "solid": return pattern([])
+        case "dotted": return pattern([.lineWidth, absEntry(.pt(2.0))])
+        case "densely-dotted": return pattern([.lineWidth, absEntry(.pt(1.0))])
+        case "loosely-dotted": return pattern([.lineWidth, absEntry(.pt(4.0))])
+        case "dashed": return pattern([absEntry(.pt(3.0)), absEntry(.pt(3.0))])
+        case "densely-dashed": return pattern([absEntry(.pt(3.0)), absEntry(.pt(2.0))])
+        case "loosely-dashed": return pattern([absEntry(.pt(3.0)), absEntry(.pt(6.0))])
+        case "dash-dotted":
+            return pattern([absEntry(.pt(3.0)), absEntry(.pt(2.0)),
+                            .lineWidth, absEntry(.pt(2.0))])
+        case "densely-dash-dotted":
+            return pattern([absEntry(.pt(3.0)), absEntry(.pt(1.0)),
+                            .lineWidth, absEntry(.pt(1.0))])
+        case "loosely-dash-dotted":
+            return pattern([absEntry(.pt(3.0)), absEntry(.pt(4.0)),
+                            .lineWidth, absEntry(.pt(4.0))])
+        default: return nil
+        }
+    }
+}
+
 /// A stroke (pen) description.
 ///
-/// Port of `Stroke` in `visualize/stroke.rs`.
-public struct Stroke: Sendable, Hashable {
+/// Port of `Stroke<T>` in `visualize/stroke.rs`. `T` is the length type:
+/// `Length` for the unresolved (style-chain) form, `Abs` after
+/// `resolve(styles)`.
+public struct Stroke<T: Numeric & Hashable> {
     /// The stroke's paint.
     public var paint: Smart<Paint>
 
     /// The stroke's thickness.
-    public var thickness: Smart<Length>
+    public var thickness: Smart<T>
 
     /// The line cap.
     public var cap: Smart<LineCap>
@@ -331,16 +431,16 @@ public struct Stroke: Sendable, Hashable {
     public var join: Smart<LineJoin>
 
     /// The dash pattern.
-    public var dash: Smart<DashPattern<Length>?>
+    public var dash: Smart<DashPattern<T, DashLength<T>>?>
 
     /// The miter limit.
     public var miterLimit: Smart<Ratio>
 
     public init(paint: Smart<Paint> = .auto,
-                thickness: Smart<Length> = .auto,
+                thickness: Smart<T> = .auto,
                 cap: Smart<LineCap> = .auto,
                 join: Smart<LineJoin> = .auto,
-                dash: Smart<DashPattern<Length>?> = .auto,
+                dash: Smart<DashPattern<T, DashLength<T>>?> = .auto,
                 miterLimit: Smart<Ratio> = .auto) {
         self.paint = paint
         self.thickness = thickness
@@ -350,6 +450,40 @@ public struct Stroke: Sendable, Hashable {
         self.miterLimit = miterLimit
     }
 
+    /// Join with an outer stroke, preferring this stroke's custom fields
+    /// (upstream `Stroke::or`).
+    public func or(_ outer: Stroke<T>) -> Stroke<T> {
+        Stroke(
+            paint: paint.or(outer.paint),
+            thickness: thickness.or(outer.thickness),
+            cap: cap.or(outer.cap),
+            join: join.or(outer.join),
+            dash: dash.or(outer.dash),
+            miterLimit: miterLimit.or(outer.miterLimit)
+        )
+    }
+
+    /// Map the contained lengths with `f` (upstream `Stroke::map`).
+    public func map<U: Numeric & Hashable>(_ f: @escaping (T) -> U) -> Stroke<U> {
+        Stroke<U>(
+            paint: paint,
+            thickness: thickness.map(f),
+            cap: cap,
+            join: join,
+            dash: dash.map { dash in
+                dash.map { pattern in
+                    DashPattern<U, DashLength<U>>(
+                        array: pattern.array.map { $0.map(f) },
+                        phase: f(pattern.phase)
+                    )
+                }
+            },
+            miterLimit: miterLimit
+        )
+    }
+}
+
+extension Stroke where T == Length {
     /// Create from a paint + thickness pair (the `color + length` op).
     public init(color: Color, thickness: Length) {
         self.init(paint: .custom(.solid(color)), thickness: .custom(thickness))
@@ -361,6 +495,107 @@ public struct Stroke: Sendable, Hashable {
 
     public init(tiling: Tiling, thickness: Length) {
         self.init(paint: .custom(.tiling(tiling)), thickness: .custom(thickness))
+    }
+}
+
+extension Stroke where T == Length {
+    /// Resolve all lengths against the style chain
+    /// (upstream `Resolve for Stroke` → `Stroke<Abs>`).
+    public func resolve(_ styles: StyleChain) -> Stroke<Abs> {
+        Stroke<Abs>(
+            paint: paint,
+            thickness: thickness.resolve(styles),
+            cap: cap,
+            join: join,
+            dash: dash.resolve(styles),
+            miterLimit: miterLimit
+        )
+    }
+}
+
+extension Stroke: Fold where T: Fold {
+    /// Fold two stroke values field-wise (upstream `Fold for Stroke`).
+    /// `inner` is the inner style value, `outer` the outer one.
+    public static func fold(_ inner: Stroke<T>, _ outer: Stroke<T>) -> Stroke<T> {
+        inner.or(outer)
+    }
+}
+
+extension Stroke where T == Abs {
+    /// Unpack the stroke, filling missing fields from the `default`
+    /// (upstream `Stroke<Abs>::unwrap_or`).
+    public func unwrapOr(_ `default`: FixedStroke) -> FixedStroke {
+        let thickness = thickness.custom() ?? `default`.thickness
+        let dash: DashPattern<Abs, Abs>? = dash.mapOr(`default`.dash) { pattern in
+            pattern.map { resolved in
+                DashPattern<Abs, Abs>(
+                    array: resolved.array.map { $0.finish(thickness) },
+                    phase: resolved.phase
+                )
+            }
+        }
+        return FixedStroke(
+            paint: paint.custom() ?? `default`.paint,
+            thickness: thickness,
+            cap: cap.custom() ?? `default`.cap,
+            join: join.custom() ?? `default`.join,
+            dash: dash,
+            miterLimit: miterLimit.custom() ?? `default`.miterLimit
+        )
+    }
+
+    /// Unpack the stroke, filling missing fields with the default values.
+    public func unwrapOrDefault() -> FixedStroke {
+        unwrapOr(FixedStroke())
+    }
+}
+
+/// A fully specified stroke of a geometric shape.
+///
+/// Port of `FixedStroke` in `visualize/stroke.rs`.
+public struct FixedStroke: Sendable, Hashable {
+    /// The stroke's paint.
+    public var paint: Paint
+    /// The stroke's thickness.
+    public var thickness: Abs
+    /// The stroke's line cap.
+    public var cap: LineCap
+    /// The stroke's line join.
+    public var join: LineJoin
+    /// The stroke's line dash pattern (resolved to absolute lengths).
+    public var dash: DashPattern<Abs, Abs>?
+    /// The miter limit. Defaults to 4.0, same as `tiny-skia`.
+    public var miterLimit: Ratio
+
+    public init(paint: Paint, thickness: Abs, cap: LineCap, join: LineJoin,
+                dash: DashPattern<Abs, Abs>?, miterLimit: Ratio) {
+        self.paint = paint
+        self.thickness = thickness
+        self.cap = cap
+        self.join = join
+        self.dash = dash
+        self.miterLimit = miterLimit
+    }
+
+    /// Create a stroke from a paint and a thickness
+    /// (upstream `FixedStroke::from_pair`).
+    public static func fromPair(paint: Paint, thickness: Abs) -> FixedStroke {
+        var stroke = FixedStroke()
+        stroke.paint = paint
+        stroke.thickness = thickness
+        return stroke
+    }
+
+    /// The default stroke (upstream `Default for FixedStroke`).
+    public init() {
+        self.init(
+            paint: .solid(.black),
+            thickness: .pt(1.0),
+            cap: .butt,
+            join: .miter,
+            dash: nil,
+            miterLimit: Ratio(4.0)
+        )
     }
 }
 
@@ -444,15 +679,25 @@ extension Tiling: DynamicBounds {
     public static var typeInfo: TypeInfo { TypeInfo(name: "tiling", longName: "tiling", title: "Tiling", since: .version([0, 13, 0]), keywords: ["pattern"]) }
 }
 
-extension Stroke: DynamicBounds {
+extension Stroke: NativeType {
     public static var typeInfo: TypeInfo { TypeInfo(name: "stroke", title: "Stroke") }
 }
+
+extension Stroke: DynamicBounds {}
 
 extension Paint: DynamicBounds {
     public static var typeInfo: TypeInfo { TypeInfo(name: "paint", title: "Paint") }
 }
 
 
-extension DashPattern: Equatable where T: Equatable {}
+extension DashLength: Equatable where T: Equatable {}
+extension DashLength: @unchecked Sendable {}
+extension DashLength: Hashable where T: Hashable {}
+
+extension DashPattern: Equatable where T: Equatable, DT: Equatable {}
 extension DashPattern: @unchecked Sendable {}
-extension DashPattern: Hashable where T: Hashable {}
+extension DashPattern: Hashable where T: Hashable, DT: Hashable {}
+
+extension Stroke: Equatable {}
+extension Stroke: @unchecked Sendable {}
+extension Stroke: Hashable {}

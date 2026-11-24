@@ -275,11 +275,11 @@ func ops_add(_ lhs: Value, _ rhs: Value) -> HintedStrResult<Value> {
     case let (.arguments(a), .arguments(b)): return .success(.arguments(a + b))
 
     case let (.color(color), .length(thickness)), let (.length(thickness), .color(color)):
-        return .success(.dynamic(Stroke(color: color, thickness: thickness)))
+        return .success(.dynamic(Stroke<Length>(color: color, thickness: thickness)))
     case let (.gradient(g), .length(thickness)), let (.length(thickness), .gradient(g)):
-        return .success(.dynamic(Stroke(gradient: g, thickness: thickness)))
+        return .success(.dynamic(Stroke<Length>(gradient: g, thickness: thickness)))
     case let (.tiling(t), .length(thickness)), let (.length(thickness), .tiling(t)):
-        return .success(.dynamic(Stroke(tiling: t, thickness: thickness)))
+        return .success(.dynamic(Stroke<Length>(tiling: t, thickness: thickness)))
 
     case let (.duration(a), .duration(b)): return .success(.duration(a + b))
     case let (.datetime(a), .duration(b)):

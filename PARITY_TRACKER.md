@@ -166,8 +166,10 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
 
 ## Phase 3 — TypstRealize & TypstLayout
 
-- [ ] realize: show-rule expansion, style resolution, spaces
-- [ ] layout core: Frame, Point/Size, regions, flow
+- [x] realize: show-rule expansion, style resolution, spaces
+- [ ] layout core: Frame, Point/Size, regions, flow — payload layer done
+      (Rect/Regions/Curve/Shape/Stroke/TextSize); `Frame`/`FrameItem`
+      pending `TextItem` (font module) + `Image` (decode stack)
 - [ ] inline: collect, shaping (CoreText), linebreak (Knuth-Plass),
       line, align, bidi
 - [ ] block/flow: par, block, box, stack, pad, align, place, columns,
@@ -234,8 +236,12 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
 - [x] Engine wiring — `Routines.realize` default impl, `Engine.delay`, `Route.increase/decrease/checkShowDepth`, `measureLocation` hook
 - [x] `DocumentInfo::populate`/`populate_locale` + `DocumentFormatOptions::populate` bodies (`RealizeTypes.swift`; `TextElem` gained `lang`/`region` fields)
 - [x] Element constructors — `#[elem]`-generated `Construct` impls + hand-written `TextElem`/`PageElem`/`LinkElem` constructs, field-parse order (`parse`→custom, `variadic`→`all`, `required`→`expect`, `positional`→`find`, else `named`), item casts (`ListItem`/`EnumItem`/`TermItem` content-unpack), `list.item`/`enum.item`/`terms.item` nested scopes, global registration of model+layout elements, alignment/direction prelude values (`ltr`/`rtl`/`ttb`/`btt`, `start`/`left`/`center`/`right`/`end`/`top`/`horizon`/`bottom`) (`Model/ElementConstructs.swift`, `Foundations/Styles.swift` `setStyles` split)
+- [x] Layout primitives — `Rect`, `Region`/`Regions` (backlog/last/`next`/`mayBreak`/`mayProgress`/`isFull`/`map`/iterator), `Curve`/`CurveItem`/`CloseMode` (rect/ellipse ctors, translate, exact cubic-extrema bbox, winding-number `contains`, flattened-segment `strokeContains`), `FillRule`/`Shape`/`Geometry` (analytic stroked-line + rect bboxes, kurbo-free), `DashLength`/`DashPattern<T,DT>` + named presets, generic `Stroke<T>` (`or`/`map`/`resolve`→`Stroke<Abs>`/`unwrapOr`→`FixedStroke`), `FixedStroke`, `Em`/`Length`/`Smart`/`Optional` `Resolve` impls, `TextSize` (fold = linear-function multiply, resolve→`Abs`) + `TextElem.size` field + `StyleChain.textSize()` folded accessor (`Layout/{Rect,Regions}.swift`, `Visualize/{Shape,Curve}.swift`, `Visualize.swift`, `Text/TextSize.swift`, `Layout/Scalars.swift`)
+- [ ] kurbo-equivalent geometry: stroked-curve bbox is approximated (segment bboxes + half thickness); `strokeContains` uses min-distance ≤ half thickness (caps/joins/dashes not applied); port kurbo subset or platform equivalent when export lands
+- [ ] `Frame`/`FrameItem`/`GroupItem`/`TextItem`/`Glyph`/`Linkage`/`Image` — blocked on font module (`Font`/`FontInstance`, needs TTF parsing strategy: CoreText vs ttf-parser port) and image decode stack (raster/svg/pdf)
+- [ ] `DashPattern`/`DashLength`/`Stroke` value casts (dict/array/preset-string forms) — land with stroke element port
 - [ ] `#[parse]`-custom settable fields beyond `AlignElem.alignment` (positional `find` via `ElementInfo.setImpl`; more needed as layout elements land)
-- [ ] `#[fold]` fields — `Fold`/`getFolded`/`Alignment.fold` exist but `getFolded` has no callers yet; wire into style resolution when fold-dependent fields land
+- [ ] `#[fold]` fields — `Fold`/`getFolded`/`Alignment.fold`/`TextSize.fold` exist; only `textSize` resolves via a dedicated folded accessor (`StyleChain.textSizeValue`); general fold wiring still pending
 - [ ] `HtmlElem` whitespace-collapsing branch in space transitions (needs HTML export)
 - [ ] Native show rules registration for built-in elements (bibliography, outline, etc.)
 - [ ] Measure-mode location resolution via `engine.introspect` (introspection milestone)
