@@ -120,8 +120,10 @@ extension NonZeroI64: Castable, IntoValue, FromValue {
 // MARK: - NonZeroUsize (upstream `cast! { NonZeroUsize, .. }` in int.rs)
 
 /// A positive `usize` — parameter-only type for `chunks`/`windows`.
-struct NonZeroUsize: Sendable, Hashable {
-    var value: Int
+public struct NonZeroUsize: Sendable, Hashable {
+    public var value: Int
+
+    public init(value: Int) { self.value = value }
 }
 
 extension NonZeroUsize: Castable, IntoValue, FromValue {

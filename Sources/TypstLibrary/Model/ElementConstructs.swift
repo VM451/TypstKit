@@ -659,6 +659,13 @@ func defineLayoutElements(into global: Scope) {
     defineElement(into: global, HElem.self)
     defineElement(into: global, BoxElem.self)
     defineElement(into: global, AlignElem.self)
+    defineElement(into: global, PadElem.self)
+    defineElement(into: global, StackElem.self)
+    defineElement(into: global, HideElem.self)
+    defineElement(into: global, PlaceElem.self)
+    defineElement(into: global, ColumnsElem.self)
+    defineElement(into: global, ColbreakElem.self)
+    defineElement(into: global, LayoutElem.self)
 
     // Upstream `lib.rs` global prelude: alignment and direction values.
     global.define("ltr", .dynamic(Dir.ltr))

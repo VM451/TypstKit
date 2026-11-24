@@ -173,7 +173,11 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
 - [ ] inline: collect, shaping (CoreText), linebreak (Knuth-Plass),
       line, align, bidi
 - [ ] block/flow: par, block, box, stack, pad, align, place, columns,
-      hide, measure
+      hide, measure — element defs done (`Layout/Elements.swift`:
+      PadElem custom `rest`/`x`/`y` parse, StackElem+StackChild,
+      HideElem ghost `hidden`, PlaceElem+PlacementScope+`place.flush`
+      scope, ColumnsElem+ColbreakElem, LayoutElem); layout rules pending;
+      `measure` func blocked on `Frame`
 - [ ] pages: page, page run, margin/header/footer
 - [ ] lists: list, enum, terms
 - [ ] grid/table: grid, table, cell, header/footer, spans, strokes
@@ -237,6 +241,8 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
 - [x] `DocumentInfo::populate`/`populate_locale` + `DocumentFormatOptions::populate` bodies (`RealizeTypes.swift`; `TextElem` gained `lang`/`region` fields)
 - [x] Element constructors — `#[elem]`-generated `Construct` impls + hand-written `TextElem`/`PageElem`/`LinkElem` constructs, field-parse order (`parse`→custom, `variadic`→`all`, `required`→`expect`, `positional`→`find`, else `named`), item casts (`ListItem`/`EnumItem`/`TermItem` content-unpack), `list.item`/`enum.item`/`terms.item` nested scopes, global registration of model+layout elements, alignment/direction prelude values (`ltr`/`rtl`/`ttb`/`btt`, `start`/`left`/`center`/`right`/`end`/`top`/`horizon`/`bottom`) (`Model/ElementConstructs.swift`, `Foundations/Styles.swift` `setStyles` split)
 - [x] Layout primitives — `Rect`, `Region`/`Regions` (backlog/last/`next`/`mayBreak`/`mayProgress`/`isFull`/`map`/iterator), `Curve`/`CurveItem`/`CloseMode` (rect/ellipse ctors, translate, exact cubic-extrema bbox, winding-number `contains`, flattened-segment `strokeContains`), `FillRule`/`Shape`/`Geometry` (analytic stroked-line + rect bboxes, kurbo-free), `DashLength`/`DashPattern<T,DT>` + named presets, generic `Stroke<T>` (`or`/`map`/`resolve`→`Stroke<Abs>`/`unwrapOr`→`FixedStroke`), `FixedStroke`, `Em`/`Length`/`Smart`/`Optional` `Resolve` impls, `TextSize` (fold = linear-function multiply, resolve→`Abs`) + `TextElem.size` field + `StyleChain.textSize()` folded accessor (`Layout/{Rect,Regions}.swift`, `Visualize/{Shape,Curve}.swift`, `Visualize.swift`, `Text/TextSize.swift`, `Layout/Scalars.swift`)
+- [x] Layout element defs — `PadElem` (custom `rest`→`x`/`y`→sides `#[parse]` chain), `StackElem`/`StackChild` (variadic spacing|block), `HideElem` (`hidden` ghost field), `PlaceElem`/`PlacementScope` (positional `alignment`, `place.flush` nested scope), `ColumnsElem`/`ColbreakElem` (`NonZeroUsize` count now public), `LayoutElem` (`func` field); all registered globally. Gotcha: construct must parse fields in declaration order — `expect`/`find` for `body` runs LAST or it eats earlier positionals (`Layout/Elements.swift`, `Tests/…/LayoutElementTests.swift`)
+- [ ] `measure` func — needs `Routines.layout_frame` + `Frame` (blocked)
 - [ ] kurbo-equivalent geometry: stroked-curve bbox is approximated (segment bboxes + half thickness); `strokeContains` uses min-distance ≤ half thickness (caps/joins/dashes not applied); port kurbo subset or platform equivalent when export lands
 - [ ] `Frame`/`FrameItem`/`GroupItem`/`TextItem`/`Glyph`/`Linkage`/`Image` — blocked on font module (`Font`/`FontInstance`, needs TTF parsing strategy: CoreText vs ttf-parser port) and image decode stack (raster/svg/pdf)
 - [ ] `DashPattern`/`DashLength`/`Stroke` value casts (dict/array/preset-string forms) — land with stroke element port
