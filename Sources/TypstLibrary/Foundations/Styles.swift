@@ -266,9 +266,18 @@ public struct StyleChain: Sendable {
     /// The remaining (outer) links.
     var tail: StyleChainTail?
 
+    /// Identity of the head slice's buffer, used for upstream-style pointer
+    /// equality (`StyleChain::eq` compares slice and tail pointers). Two
+    /// chains pushed from the same `Styles` storage share a head id; a
+    /// copy-on-write mutation yields a fresh id.
+    let headID: UInt
+
     public init(head: ArraySlice<LazyHash<Style>>, tail: StyleChain? = nil) {
         self.head = head
         self.tail = tail.map(StyleChainTail.init)
+        self.headID = head.withUnsafeBufferPointer {
+            $0.baseAddress.map { UInt(bitPattern: $0) } ?? 0
+        }
     }
 
     /// Start a chain over root styles.
@@ -277,8 +286,11 @@ public struct StyleChain: Sendable {
     }
 
     /// Push additional styles on top (innermost).
+    /// Port of upstream `[LazyHash<Style>]::chain` — an empty style list does
+    /// not create a new link.
     public func pushed(_ styles: Styles) -> StyleChain {
-        StyleChain(head: styles.items[...], tail: self)
+        guard !styles.isEmpty else { return self }
+        return StyleChain(head: styles.items[...], tail: self)
     }
 
     /// All properties for `(elem, field)` from innermost to outermost.
@@ -484,5 +496,167 @@ private func validateShowable(_ selector: Selector,
     case .within:
         throw HintedString("this selector cannot currently be used with show")
             .withHint("support for this is planned for the future")
+    }
+}
+
+// MARK: - StyleChain realization support
+
+extension Style {
+    /// The property, if this is a property style.
+    public var property: Property? {
+        if case let .property(p) = self { return p }
+        return nil
+    }
+
+    /// The recipe, if this is a recipe style.
+    public var recipe: Recipe? {
+        if case let .recipe(r) = self { return r }
+        return nil
+    }
+}
+
+extension Styles {
+    /// Iterate over the contained styles.
+    /// Port of upstream `Styles::iter`.
+    public func iter() -> [Style] { items.map(\.value) }
+
+    /// Apply outer styles. Like `StyleChain.chain`, but in-place.
+    /// Port of upstream `Styles::apply`.
+    public mutating func apply(_ outer: Styles) {
+        var merged = outer
+        merged.items.append(contentsOf: items)
+        self = merged
+    }
+
+    /// Marks the styles as having been applied outside of any show rule.
+    /// Port of upstream `Styles::outside`.
+    public func outside() -> Styles {
+        var copy = self
+        for i in copy.items.indices {
+            switch copy.items[i].value {
+            case var .property(p):
+                p.outside = true
+                copy.items[i] = LazyHash(.property(p))
+            case var .recipe(r):
+                r.outside = true
+                copy.items[i] = LazyHash(.recipe(r))
+            case .revocation:
+                break
+            }
+        }
+        return copy
+    }
+}
+
+extension StyleChain {
+    /// An empty style chain.
+    /// Port of upstream `StyleChain::default`.
+    public init() {
+        self.init(head: [][...], tail: nil)
+    }
+
+    /// Iterate over the entries of the chain, innermost position first.
+    /// Port of upstream `StyleChain::entries`.
+    public func entries() -> [LazyHash<Style>] {
+        var result: [LazyHash<Style>] = []
+        var link: StyleChain? = self
+        while let l = link {
+            result.append(contentsOf: l.head.reversed())
+            link = l.tail?.chain
+        }
+        return result
+    }
+
+    /// Iterate over the links of the chain, innermost first.
+    /// Port of upstream `StyleChain::links`.
+    public func links() -> [[LazyHash<Style>]] {
+        var result: [[LazyHash<Style>]] = []
+        var link: StyleChain? = self
+        while let l = link {
+            result.append(Array(l.head))
+            link = l.tail?.chain
+        }
+        return result
+    }
+
+    /// Iterate over the recipes in the chain.
+    /// Port of upstream `StyleChain::recipes`.
+    public func recipes() -> [Recipe] {
+        entries().compactMap { entry in
+            if case let .recipe(r) = entry.value { return r }
+            return nil
+        }
+    }
+
+    /// Make the given styles the first (innermost) link of this chain.
+    /// Port of upstream `StyleChain::chain` for `Styles`.
+    public func chain(_ local: Styles) -> StyleChain {
+        local.isEmpty ? self : pushed(local)
+    }
+
+    /// Build owned styles from the suffix (all links beyond the `len`) of the
+    /// chain.
+    /// Port of upstream `StyleChain::suffix`.
+    public func suffix(_ len: Int) -> Styles {
+        let all = links()
+        let take = max(all.count - len, 0)
+        var items: [LazyHash<Style>] = []
+        for link in all.prefix(take) {
+            items.append(contentsOf: link.reversed())
+        }
+        items.reverse()
+        var styles = Styles()
+        styles.items = items
+        return styles
+    }
+
+    /// Remove the last (innermost) link from the chain.
+    /// Port of upstream `StyleChain::pop`.
+    public mutating func pop() {
+        self = tail?.chain ?? StyleChain()
+    }
+
+    /// Determine the shared trunk of a collection of style chains.
+    /// Port of upstream `StyleChain::trunk`.
+    public static func trunk<S: Sequence>(_ iter: S) -> StyleChain?
+    where S.Element == StyleChain {
+        var iter = iter.makeIterator()
+        guard var trunk = iter.next() else { return nil }
+        var depth = trunk.links().count
+
+        while var chain = iter.next() {
+            let len = chain.links().count
+            if len < depth {
+                for _ in 0..<(depth - len) { trunk.pop() }
+                depth = len
+            } else if len > depth {
+                for _ in 0..<(len - depth) { chain.pop() }
+            }
+
+            while depth > 0 && chain != trunk {
+                trunk.pop()
+                chain.pop()
+                depth -= 1
+            }
+        }
+
+        return trunk
+    }
+
+    /// Determines the shared trunk of a list of elements.
+    /// This will ignore styles for tags (conceptually, they just don't exist).
+    /// Port of upstream `StyleChain::trunk_from_pairs`.
+    public static func trunkFromPairs(_ pairs: [(Content, StyleChain)]) -> StyleChain? {
+        trunk(pairs.filter { !$0.0.is(TagElem.self) }.map(\.1))
+    }
+}
+
+extension StyleChain: Equatable {
+    /// Port of upstream `StyleChain::eq` — pointer equality of the head slice
+    /// and tail link. Value-equal chains built through separate `chain` calls
+    /// may compare unequal (as upstream's allocation identity would), which is
+    /// the conservative direction for `trunk`/`suffix` computations.
+    public static func == (a: StyleChain, b: StyleChain) -> Bool {
+        a.headID == b.headID && a.tail === b.tail
     }
 }
