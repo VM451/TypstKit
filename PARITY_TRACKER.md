@@ -189,3 +189,11 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
 - [ ] TypstIDE: highlight spans, completion, tooltips, jump-to-source
 - [ ] Public API docs + examples
 - [ ] Final gate: all targets green, clean tree
+
+## typst-eval (in progress)
+
+- [x] `vm.rs` — `Vm` struct (engine/flow/scopes/inspected/context), `define`/`bind`/`traceAt`/`trace`, `hint_if_shadowed_std`, `is` keyword warning
+- [x] `flow.rs` — `FlowEvent` (break/continue/return+conditional) with `forbidden()` errors
+- [x] `access.rs` + `methods.rs` — `LValue` path enum (`.variable`/`.dictField`/`.methodSlot`) with read/write/mutate via `Scopes.getMut` + `Binding.write`; `access_dict` error taxonomy; `call_method_mut` (push/pop/insert/remove) + `call_method_access` slot resolution (first/last/at)
+- [x] Binding guards — `NormalBindingGuard`, `Engine.bindingGuard()`, `World.silentBindingGuard()`; `Library.features` unified to upstream `Features` (replaces `FeatureGuard`)
+- [ ] `code.rs`, `call.rs`, `markup.rs`, `math.rs`, `binding.rs`, `import.rs`, `ops.rs`, `rules.rs`, `lib.rs` — eval bodies pending (`Expr.eval` currently stubbed)

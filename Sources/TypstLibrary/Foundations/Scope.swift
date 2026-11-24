@@ -19,6 +19,18 @@ public struct Features: Sendable, Hashable {
         self.enabled = enabled
     }
 
+    /// All features enabled.
+    public static func all() -> Features {
+        Features(Set(Feature.allCases))
+    }
+
+    /// No features enabled.
+    public static func none() -> Features { Features() }
+
+    public mutating func enable(_ feature: Feature) {
+        enabled.insert(feature)
+    }
+
     public func isEnabled(_ feature: Feature) -> Bool {
         enabled.contains(feature)
     }
@@ -428,27 +440,37 @@ public final class Scope: @unchecked Sendable {
 }
 
 /// Scopes on the evaluation stack. Port of `Scopes`.
+///
+/// Layout matches upstream: a dedicated `top` scope (innermost), a stack
+/// of entered scopes, and an immutable `base` (global library) scope.
 public struct Scopes {
-    /// The base library scope.
-    public let base: Scope?
-    /// User scopes, innermost last.
+    /// The innermost scope.
+    public var top: Scope
+    /// Entered scopes, innermost last.
     public private(set) var stack: [Scope] = []
+    /// The base library scope (read-only for mutations).
+    public let base: Scope?
 
     public init(base: Scope?) {
         self.base = base
+        self.top = Scope()
     }
 
+    /// Enter a new scope.
     public mutating func enter() {
-        stack.append(Scope())
+        stack.append(top)
+        top = Scope()
     }
 
+    /// Exit the topmost scope.
     public mutating func exit() {
-        _ = stack.popLast()
+        precondition(!stack.isEmpty, "no pushed scope")
+        top = stack.removeLast()
     }
 
     /// Look up a variable through all scopes.
     public func get(_ name: String, guard access: any BindingGuard) -> HintedStrResult<Value> {
-        for scope in stack.reversed() {
+        for scope in [top] + stack.reversed() {
             if let binding = scope.get(name) {
                 return readBinding(binding, name: name, access: access)
             }
@@ -459,6 +481,21 @@ public struct Scopes {
         return .failure(unknownVariable(name))
     }
 
+    /// Look up a binding itself.
+    public func getBinding(_ name: String) -> HintedStrResult<Binding> {
+        for scope in [top] + stack.reversed() {
+            if let binding = scope.get(name) { return .success(binding) }
+        }
+        if let base, let binding = base.get(name) { return .success(binding) }
+        return .failure(unknownVariable(name))
+    }
+
+    /// Whether a name resolves to a standard-library definition.
+    /// Matches upstream `check_std_shadowed`: only the base scope counts.
+    public func checkStdShadowed(_ name: String) -> Bool {
+        base?.get(name) != nil
+    }
+
     func readBinding(
         _ binding: Binding,
         name: String,
@@ -467,19 +504,50 @@ public struct Scopes {
         binding.read(access).mapError { $0.cannot("access variable `\(name)`") }
     }
 
-    /// Get the binding itself (for `set` rules etc.).
-    public func getBinding(_ name: String) -> HintedStrResult<Binding> {
-        for scope in stack.reversed() {
-            if let binding = scope.get(name) { return .success(binding) }
+    /// Access a binding's value mutably (read-modify-write), searching
+    /// `top` then entered scopes. The base scope is immutable — upstream
+    /// reports `cannot mutate a constant` / `unknown variable`.
+    public mutating func getMut<T>(
+        _ name: String,
+        span: Span,
+        guard access: any BindingGuard,
+        _ body: (inout Value) throws -> T
+    ) -> HintedStrResult<T> {
+        for scope in [top] + stack.reversed() {
+            if scope.get(name) != nil {
+                var result: HintedStrResult<T>?
+                scope.update(name) { binding in
+                    switch binding.write(access) {
+                    case .failure(let error):
+                        result = .failure(error.cannot("access variable `\(name)`"))
+                    case .success:
+                        do {
+                            result = .success(try body(&binding.value))
+                        } catch let error as HintedString {
+                            result = .failure(error)
+                        } catch {
+                            result = .failure(HintedString("\(error)"))
+                        }
+                    }
+                }
+                if let result { return result }
+            }
         }
-        if let base, let binding = base.get(name) { return .success(binding) }
+        if base?.get(name) != nil {
+            return .failure(cannotMutateConstant(name))
+        }
+        if name == "std" {
+            return .failure(cannotMutateConstant(name))
+        }
         return .failure(unknownVariable(name))
+        _ = span
     }
+}
 
-    /// Whether a name resolves to a standard-library definition.
-    public func checkStdShadowed(_ name: String) -> Bool {
-        base?.get(name) != nil && stack.allSatisfy { $0.get(name) == nil }
-    }
+/// Error for mutating a standard-library binding.
+func cannotMutateConstant(_ name: String) -> HintedString {
+    HintedString("cannot mutate a constant")
+        .withHint("`\(name)` is a standard library definition")
 }
 
 func unknownVariable(_ name: String) -> HintedString {

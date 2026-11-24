@@ -37,10 +37,7 @@ let dictionaryConstruct = nativeFunc(
     // Upstream filters bindings through a silent guard, discarding
     // feature/deprecation failures.
     let guard_ = SilentBindingGuard(
-        features: Features(
-            Set(engine.world.library.value.features.enabled.compactMap {
-                Feature(rawValue: $0)
-            })))
+        features: engine.world.library.value.features)
     var pairs: [(Str, Value)] = []
     for (key, binding) in module.scope.bindings {
         if case let .success(value) = binding.read(guard_) {

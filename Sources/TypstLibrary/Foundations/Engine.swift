@@ -73,7 +73,7 @@ public struct Library: Sendable, Hashable {
     public var scope: Scope
 
     /// The feature guard for version-gated features.
-    public var features: FeatureGuard
+    public var features: Features
 
     /// Host-installed evaluation/realization/layout routines.
     public var routines: Routines
@@ -82,7 +82,7 @@ public struct Library: Sendable, Hashable {
     /// `LibraryBuilder::with_inputs`).
     public var inputs: Dict
 
-    public init(scope: Scope, features: FeatureGuard = FeatureGuard(),
+    public init(scope: Scope, features: Features = Features(),
                 routines: Routines = Routines(), inputs: Dict = Dict()) {
         self.scope = scope
         self.features = features
@@ -259,15 +259,6 @@ public struct Font: Sendable {
     public init(index: Int, data: Bytes) {
         self.index = index; self.data = data
     }
-}
-
-/// Feature gate controlling version-gated stdlib features.
-public struct FeatureGuard: Sendable, Hashable {
-    public private(set) var enabled: Set<String> = []
-    public init() {}
-    public init(enabled: Set<String>) { self.enabled = enabled }
-    public mutating func enable(_ feature: String) { enabled.insert(feature) }
-    public func isEnabled(_ feature: String) -> Bool { enabled.contains(feature) }
 }
 
 /// File access result.
