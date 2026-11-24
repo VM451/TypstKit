@@ -10,6 +10,10 @@ let package = Package(
     ],
     products: [
         .library(
+            name: "TypstKit",
+            targets: ["TypstUtils", "TypstSyntax", "TypstLibrary"]
+        ),
+        .library(
             name: "TypstUniverseKit",
             targets: ["TypstUniverseCore", "TypstUniverseStorage", "TypstUniverseUI"]
         ),
@@ -22,6 +26,9 @@ let package = Package(
     ],
     targets: [
         .systemLibrary(name: "CZlib", path: "Sources/CZlib"),
+        .target(name: "TypstUtils"),
+        .target(name: "TypstSyntax", dependencies: ["TypstUtils"]),
+        .target(name: "TypstLibrary", dependencies: ["TypstSyntax", "TypstUtils"]),
         .target(
             name: "TypstUniverseCore",
             swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]

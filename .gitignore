@@ -3,3 +3,4 @@
 DerivedData/
 graphify-out/
 .DS_Store
+.reference/
