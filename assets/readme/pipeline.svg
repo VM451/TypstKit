@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="1200" height="420" viewBox="0 0 1200 420"
+     role="img" aria-labelledby="title desc">
+  <title id="title">TypstKit compile pipeline</title>
+  <desc id="desc">A .typ source flows through five compiler stages — parse and evaluate are ported, realize, layout and export are next. AnyTyp emits the source; TypstUniverseKit resolves package imports; TypstUtils and TypstLibrary form the ported foundation.</desc>
+
+  <rect width="1200" height="420" rx="26" fill="#FBFAF5"/>
+
+  <!-- feeder: AnyTyp emits .typ -->
+  <g id="feeder-anytyp">
+    <rect x="48" y="44" width="250" height="76" rx="12" fill="#F4F2E9" stroke="#E0DCCE" stroke-width="1.5"/>
+    <text x="68" y="78" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+          font-size="19" font-weight="700" fill="#17808E">ANYTYP</text>
+    <text x="68" y="102" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+          font-size="18" fill="#6B685C">office·pdf·md → .typ</text>
+    <line x1="108" y1="120" x2="108" y2="162" stroke="#B9B4A3" stroke-width="1.5"/>
+    <path d="M 102 156 L 108 164 L 114 156" stroke="#B9B4A3" stroke-width="1.5" fill="none"/>
+    <text x="118" y="152" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+          font-size="16" fill="#8A8778">emits .typ</text>
+  </g>
+
+  <!-- feeder: UniverseKit resolves imports -->
+  <g id="feeder-universe">
+    <rect x="307" y="44" width="330" height="76" rx="12" fill="#F4F2E9" stroke="#E0DCCE" stroke-width="1.5"/>
+    <text x="327" y="78" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+          font-size="19" font-weight="700" fill="#17808E">TYPSTUNIVERSEKIT</text>
+    <text x="327" y="102" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+          font-size="18" fill="#6B685C">@preview/name:version</text>
+    <line x1="472" y1="120" x2="472" y2="162" stroke="#B9B4A3" stroke-width="1.5"/>
+    <path d="M 466 156 L 472 164 L 478 156" stroke="#B9B4A3" stroke-width="1.5" fill="none"/>
+    <text x="482" y="152" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+          font-size="16" fill="#8A8778">resolves imports</text>
+  </g>
+
+  <!-- legend -->
+  <g id="legend" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18" fill="#5C594E">
+    <circle cx="902" cy="64" r="6" fill="#239DAD"/><text x="916" y="70">ported</text>
+    <circle cx="902" cy="96" r="6" fill="none" stroke="#B9B4A3" stroke-width="2"/><text x="916" y="102">next</text>
+    <text x="880" y="132" font-size="16" fill="#8A8778">status → PARITY_TRACKER.md</text>
+  </g>
+
+  <!-- .typ source node -->
+  <g id="source">
+    <rect x="48" y="168" width="120" height="140" rx="12" fill="#24262E"/>
+    <text x="66" y="212" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+          font-size="34" font-weight="600" fill="#54C4D4">#</text>
+    <text x="66" y="240" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+          font-size="18" fill="#E9E7DD">main.typ</text>
+    <rect x="66" y="252" width="76" height="8" rx="4" fill="#4A4C55"/>
+    <rect x="66" y="266" width="56" height="8" rx="4" fill="#4A4C55"/>
+  </g>
+
+  <!-- stage flow arrows -->
+  <g stroke="#B9B4A3" stroke-width="2" fill="none">
+    <line x1="170" y1="238" x2="188" y2="238"/><path d="M 182 232 L 190 238 L 182 244"/>
+    <line x1="370" y1="238" x2="382" y2="238"/><path d="M 376 232 L 384 238 L 376 244"/>
+    <line x1="562" y1="238" x2="574" y2="238"/><path d="M 568 232 L 576 238 L 568 244"/>
+    <line x1="754" y1="238" x2="766" y2="238"/><path d="M 760 232 L 768 238 L 760 244"/>
+    <line x1="946" y1="238" x2="958" y2="238"/><path d="M 952 232 L 960 238 L 952 244"/>
+  </g>
+
+  <!-- stages -->
+  <g id="stages" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', Helvetica, Arial, sans-serif">
+    <g id="stage-parse">
+      <rect x="192" y="168" width="176" height="140" rx="12" fill="#FFFFFF" stroke="#E0DCCE" stroke-width="1.5"/>
+      <text x="212" y="206" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="21" font-weight="700" fill="#1B1A15">parse</text>
+      <text x="212" y="234" font-size="18" fill="#77746A">lossless CST</text>
+      <text x="212" y="256" font-size="18" fill="#77746A">+ reparser</text>
+      <circle cx="218" cy="282" r="5.5" fill="#239DAD"/>
+      <text x="230" y="288" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18" fill="#17808E">ported</text>
+    </g>
+    <g id="stage-evaluate">
+      <rect x="384" y="168" width="176" height="140" rx="12" fill="#FFFFFF" stroke="#E0DCCE" stroke-width="1.5"/>
+      <text x="404" y="206" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="21" font-weight="700" fill="#1B1A15">evaluate</text>
+      <text x="404" y="234" font-size="18" fill="#77746A">closures+rules</text>
+      <text x="404" y="256" font-size="18" fill="#77746A">imports</text>
+      <circle cx="410" cy="282" r="5.5" fill="#239DAD"/>
+      <text x="422" y="288" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18" fill="#17808E">ported</text>
+    </g>
+    <g id="stage-realize">
+      <rect x="576" y="168" width="176" height="140" rx="12" fill="#FFFFFF" stroke="#E0DCCE" stroke-width="1.5"/>
+      <text x="596" y="206" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="21" font-weight="700" fill="#1B1A15">realize</text>
+      <text x="596" y="234" font-size="18" fill="#77746A">expand</text>
+      <text x="596" y="256" font-size="18" fill="#77746A">+ styles</text>
+      <circle cx="602" cy="282" r="5.5" fill="none" stroke="#B9B4A3" stroke-width="2"/>
+      <text x="614" y="288" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18" fill="#8A8778">next</text>
+    </g>
+    <g id="stage-layout">
+      <rect x="768" y="168" width="176" height="140" rx="12" fill="#FFFFFF" stroke="#E0DCCE" stroke-width="1.5"/>
+      <text x="788" y="206" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="21" font-weight="700" fill="#1B1A15">layout</text>
+      <text x="788" y="234" font-size="18" fill="#77746A">CoreText shape</text>
+      <text x="788" y="256" font-size="18" fill="#77746A">Knuth–Plass</text>
+      <circle cx="794" cy="282" r="5.5" fill="none" stroke="#B9B4A3" stroke-width="2"/>
+      <text x="806" y="288" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18" fill="#8A8778">next</text>
+    </g>
+    <g id="stage-export">
+      <rect x="960" y="168" width="176" height="140" rx="12" fill="#FFFFFF" stroke="#E0DCCE" stroke-width="1.5"/>
+      <text x="980" y="206" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="21" font-weight="700" fill="#1B1A15">export</text>
+      <text x="980" y="234" font-size="18" fill="#77746A">PDF · SVG</text>
+      <text x="980" y="256" font-size="18" fill="#77746A">· PNG</text>
+      <circle cx="986" cy="282" r="5.5" fill="none" stroke="#B9B4A3" stroke-width="2"/>
+      <text x="998" y="288" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18" fill="#8A8778">next</text>
+    </g>
+  </g>
+
+  <!-- foundation connectors -->
+  <g stroke="#C5C0AE" stroke-width="1.5" stroke-dasharray="4 4">
+    <line x1="280" y1="308" x2="280" y2="330"/>
+    <line x1="472" y1="308" x2="472" y2="330"/>
+  </g>
+
+  <!-- foundation -->
+  <g id="foundation">
+    <rect x="192" y="330" width="944" height="66" rx="12" fill="#F4F2E9" stroke="#E0DCCE" stroke-width="1.5"/>
+    <text x="216" y="358" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+          font-size="19" font-weight="700" fill="#1B1A15">TypstUtils + TypstLibrary</text>
+    <text x="216" y="382" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', Helvetica, Arial, sans-serif"
+          font-size="18" fill="#77746A">interning · values &amp; content · style chain · foundations · data loaders</text>
+    <circle cx="980" cy="352" r="5.5" fill="#239DAD"/>
+    <text x="994" y="358" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+          font-size="18" fill="#17808E">mostly ported</text>
+  </g>
+</svg>
