@@ -1,0 +1,10 @@
+AnyTyp Notice & Attribution
+===========================
+
+AnyTyp converts office documents, ebooks, spreadsheets, presentations, PDFs,
+Markdown, HTML, LaTeX, JSON, CSV/TSV, and plain text into idiomatic Typst (.typ).
+
+Portions of the binary/archive document frontends, shared XML/OLE/math helpers,
+and intermediate document model derive from `anydoc`
+(https://github.com/firecrawl/anydoc), licensed under the MIT License:
+Copyright (c) 2026 Sideguide Technologies Inc.
