@@ -319,15 +319,6 @@ extension PageElem {
 
 // MARK: - Constructs: containers
 
-extension BoxElem {
-    public static func construct(engine: inout Engine, args: inout Args) throws -> Content {
-        var elem = BoxElem(body: try args.findT())
-        elem.span = args.span
-        try args.finishT()
-        return Content(elem)
-    }
-}
-
 extension AlignElem {
     public static func construct(engine: inout Engine, args: inout Args) throws -> Content {
         // `alignment` is `#[positional]` upstream and must be consumed before
@@ -658,6 +649,7 @@ func defineLayoutElements(into global: Scope) {
     defineElement(into: global, VElem.self)
     defineElement(into: global, HElem.self)
     defineElement(into: global, BoxElem.self)
+    defineElement(into: global, BlockElem.self)
     defineElement(into: global, AlignElem.self)
     defineElement(into: global, PadElem.self)
     defineElement(into: global, StackElem.self)
@@ -665,6 +657,11 @@ func defineLayoutElements(into global: Scope) {
     defineElement(into: global, PlaceElem.self)
     defineElement(into: global, ColumnsElem.self)
     defineElement(into: global, ColbreakElem.self)
+    defineElement(into: global, RepeatElem.self)
+    defineElement(into: global, MoveElem.self)
+    defineElement(into: global, ScaleElem.self)
+    defineElement(into: global, RotateElem.self)
+    defineElement(into: global, SkewElem.self)
     defineElement(into: global, LayoutElem.self)
 
     // Upstream `lib.rs` global prelude: alignment and direction values.

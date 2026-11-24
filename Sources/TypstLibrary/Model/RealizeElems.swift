@@ -363,37 +363,6 @@ public struct PageElem: NativeElement {
 
 // MARK: - Containers
 
-/// A box.
-///
-/// Port of `BoxElem` in `layout/container.rs` (field subset).
-public struct BoxElem: NativeElement {
-    public static let info = ElementInfo(
-        name: "box",
-        title: "Box",
-        fields: [
-            FieldInfo(id: 0, name: "body"),
-        ],
-        capabilities: []
-    )
-
-    /// The box's body.
-    public var body: Content?
-
-    public var span: Span = .detached
-
-    public init(body: Content? = nil) { self.body = body }
-
-    public func field(_ id: UInt8) -> Value? {
-        id == 0 ? body.map { .content($0) } ?? .none : nil
-    }
-
-    public mutating func setField(_ id: UInt8, _ value: Value) throws {
-        guard id == 0 else { return }
-        if case let .content(c) = value { body = c }
-        if case .none = value { body = nil }
-    }
-}
-
 /// Callback storage for inline layout.
 ///
 /// Port of `callbacks::InlineCallback` — the closure is boxed so the element
