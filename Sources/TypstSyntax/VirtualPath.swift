@@ -459,6 +459,12 @@ extension FileId {
     public init(rawValue: UInt16) {
         self = FilePool.shared.id(rawValue: rawValue)
     }
+
+    /// Construct directly from an interned raw value without consulting the
+    /// pool again. Used by `FilePool` to break the init recursion.
+    static func interned(rawValue: UInt16) -> FileId {
+        FileId(raw: max(rawValue, 1))
+    }
 }
 
 /// The global interner for rooted paths, mirroring upstream's `INTERNER`.
@@ -511,6 +517,6 @@ final class FilePool: @unchecked Sendable {
     }
 
     func id(rawValue: UInt16) -> FileId {
-        FileId(rawValue: max(rawValue, 1))
+        FileId.interned(rawValue: rawValue)
     }
 }
