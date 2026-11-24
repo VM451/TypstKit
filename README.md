@@ -1,9 +1,9 @@
 <p align="center">
-  <img src="assets/hero.svg" alt="TypstUniverseKit — native Swift for the Typst Universe" width="100%" />
+  <img src="assets/readme/hero.svg" alt="TypstKit — the Typst ecosystem, native in Swift: convert documents to .typ, browse the Typst Universe, and compile markup on Apple platforms" width="100%" />
 </p>
 
 <p align="center">
-  <a href="https://swift.org"><img src="https://img.shields.io/badge/Swift-6.0-orange.svg" alt="Swift 6.0" /></a>
+  <a href="https://swift.org"><img src="https://img.shields.io/badge/Swift-6.4-orange.svg" alt="Swift 6.4" /></a>
   <a href="https://swift.org/package-manager/"><img src="https://img.shields.io/badge/SPM-compatible-brightgreen.svg" alt="SPM compatible" /></a>
   <a href="https://developer.apple.com/ios/"><img src="https://img.shields.io/badge/iOS-27%2B-blue.svg" alt="iOS 27+" /></a>
   <a href="https://developer.apple.com/macos/"><img src="https://img.shields.io/badge/macOS-27%2B-blue.svg" alt="macOS 27+" /></a>
@@ -12,92 +12,65 @@
 </p>
 
 <p align="center">
-  <strong>Search, download, and scaffold the entire <a href="https://packages.typst.org">Typst Universe</a> right inside your Apple app.</strong><br />
-  Zero dependencies · Offline-first · Strict Swift 6
+  <a href="#the-compiler-in-swift">Compiler port</a> ·
+  <a href="#typstuniversekit">TypstUniverseKit</a> ·
+  <a href="#anytyp">AnyTyp</a> ·
+  <a href="#installation">Install</a> ·
+  <a href="#testing">Testing</a> ·
+  <a href="#roadmap--limits">Roadmap</a>
 </p>
+
+**TypstKit** is the Typst ecosystem for Apple platforms in one Swift package — no Rust toolchain, no WASM, no third-party runtime dependencies:
+
+| Product | What it is | Status |
+|---|---|---|
+| `TypstKit` | Native Swift port of the [Typst](https://github.com/typst/typst) typesetting system (`TypstUtils` · `TypstSyntax` · `TypstLibrary`) | Parser + evaluator ported; realize/layout next → [PARITY_TRACKER.md](PARITY_TRACKER.md) |
+| `TypstUniverseKit` | [Typst Universe](https://packages.typst.org) registry client + turnkey SwiftUI browser | Feature-complete: sync, search, secure downloads, `typst init` scaffolding |
+| `AnyTyp` | Any document → idiomatic `.typ`, plus the `anytyp` CLI | Pure-Swift engine, 18 input formats |
+
+- **Zero runtime third-party dependencies.** Foundation, URLSession, ImageIO, CoreText, and pure-Swift gzip/TAR/TOML only. (The Swift-DocC plugin is build tooling, never linked into products.)
+- **Secure by default.** Tar-slip, symlink, and decompression-bomb guards; HTTPS-only; atomic installs; zero-tracking privacy manifest.
+- **Offline-first.** Stale-while-revalidate catalog sync (ETag / `If-None-Match`); document conversion is fully local and App-Sandbox safe.
+- **Strict Swift 6.** `Sendable` models, actor-isolated caches, `@Observable` UI, zero warnings.
+
+## How it fits together
 
 <p align="center">
-  <a href="#quick-start-template-picker-in-15-lines">Quick start</a> ·
-  <a href="#headless-usage">Headless</a> ·
-  <a href="#customizing-the-ui">Customization</a> ·
-  <a href="#how-it-works">Architecture</a> ·
-  <a href="#security">Security</a> ·
-  <a href="#contributing">Contributing</a>
+  <img src="assets/readme/pipeline.svg" width="100%" alt="TypstKit pipeline: a .typ source flows through parse and evaluate (ported), then realize, layout and export (next). AnyTyp emits .typ; TypstUniverseKit resolves @preview package imports; TypstUtils and TypstLibrary form the foundation." />
 </p>
 
-**TypstUniverseKit** brings the entire [Typst Universe](https://packages.typst.org) package registry — thousands of templates, CVs, theses, presentations, and drawing libraries — into native macOS, iOS, iPadOS, and visionOS apps. Pick a lane:
+AnyTyp produces `.typ` sources, TypstUniverseKit supplies the `@preview` packages they import, and the compiler port turns markup into documents — one dependency direction, no Rust in between.
+
+<a id="the-compiler-in-swift"></a>
+<p align="center">
+  <img src="assets/readme/section-typstkit.svg" width="100%" alt="TypstKit — the Typst compiler, in Swift" />
+</p>
+
+A faithful Swift rewrite of `typst/typst` (Apache-2.0). The port mirrors upstream's architecture and test corpus rather than wrapping it — see [ARCHITECTURE.md](ARCHITECTURE.md) for the design and [PARITY_TRACKER.md](PARITY_TRACKER.md) for file-level status.
+
+**Ported and tested:**
+
+- **Lossless concrete syntax tree** — `Source`, `Span`/`FileId`, full `SyntaxKind`, lexer for markup/code/math modes, error-recovering parser, and the incremental reparser.
+- **AST + tooling foundations** — ~70 typed node accessors, operator precedence tables, syntax highlighting (`highlight`/`highlightHTML`), `PackageSpec`/`typst.toml` models.
+- **Evaluation engine** — all 13 upstream eval files: the Vm, scopes, closures, set/show rules, control flow, imports/module system, and math evaluation (currently inside `TypstLibrary`).
+- **Value & content model** — the full `Value` enum, `Content` element trees, `StyleChain`, and most foundations scopes (`calc`, `str`, `array`, `dict`, `int`/`float`/`decimal`, `bytes`, `symbol`, `datetime`, `version`, …) plus JSON/YAML/TOML/XML/CBOR/CSV loaders.
+- **Upstream corpus parity** — vendored syntax suite (10 files, 38 sections) where every emitted diagnostic matches upstream annotations exactly: kind, byte range, and message.
+
+**Next:** `TypstRealize` → `TypstLayout` (CoreText shaping, Knuth-Plass line breaking) → `TypstExport` (PDF/SVG/raster/HTML) → `TypstIDE`. The compiler API is pre-release and will move as layout lands.
+
+<a id="typstuniversekit"></a>
+<p align="center">
+  <img src="assets/readme/section-universe.svg" width="100%" alt="TypstUniverseKit — the Typst Universe registry, inside your app" />
+</p>
+
+The entire [Typst Universe](https://packages.typst.org) — thousands of templates, CVs, theses, presentations, and drawing libraries — inside native macOS, iOS, iPadOS, and visionOS apps. Pick a lane:
 
 | Lane | Modules | For |
 |---|---|---|
 | **Headless** | `TypstUniverseCore` + `TypstUniverseStorage` | Custom editors, IDE builders, server-side Swift, enterprise tooling |
 | **Turnkey UI** | + `TypstUniverseUI` | Any SwiftUI app that wants a Pages-style template chooser in minutes |
 
-- **Zero runtime third-party dependencies.** Foundation, URLSession, ImageIO, and pure-Swift gzip/TAR/TOML only. (The Swift-DocC plugin is build tooling, never linked into products.)
-- **Offline-first.** Stale-while-revalidate catalog sync (ETag / `If-None-Match`); full browsing in Airplane Mode after first sync.
-- **Secure by default.** Tar-slip, symlink, and decompression-bomb guards; HTTPS-only; atomic installs; zero-tracking privacy manifest.
-- **Strict Swift 6.** Sendable value models, actor-isolated caches, `@Observable` UI, zero warnings.
-
----
-
-## Contents
-
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Quick start: template picker in ~15 lines](#quick-start-template-picker-in-15-lines)
-- [Headless usage](#headless-usage)
-- [Customizing the UI](#customizing-the-ui)
-- [How it works](#how-it-works)
-- [Security](#security)
-- [Testing](#testing)
-- [Documentation](#documentation)
-- [Examples](#examples)
-- [Roadmap](#roadmap)
-- [Contributing](#contributing)
-- [License](#license)
-
----
-
-## Requirements
-
-| | Minimum |
-|---|---|
-| Swift | 6.4+ (strict concurrency, `-strict-concurrency=complete`) |
-| Xcode | 27+ (SwiftUI macros require the Xcode toolchain, not CLT alone) |
-| iOS / iPadOS | 27.0+ |
-| macOS | 27.0+ |
-| visionOS | 27.0+ |
-
-> Building from the command line? Use the Xcode toolchain:
-> `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`
-
-## Installation
-
-### Swift Package Manager (`Package.swift`)
-
-```swift
-dependencies: [
-    .package(url: "https://github.com/VM451/TypstUniverseKit", from: "1.0.0")
-],
-targets: [
-    .target(name: "MyApp", dependencies: [
-        .product(name: "TypstUniverseCore", package: "TypstUniverseKit"),
-        .product(name: "TypstUniverseStorage", package: "TypstUniverseKit"),
-        .product(name: "TypstUniverseUI", package: "TypstUniverseKit"), // SwiftUI apps only
-    ])
-]
-```
-
-Only pay for what you use: headless apps can depend on `TypstUniverseCore` alone; add `TypstUniverseStorage` for downloads/scaffolding, `TypstUniverseUI` for the ready-made browser.
-
-### Xcode
-
-1. **File → Add Package Dependencies…**
-2. Enter `https://github.com/VM451/TypstUniverseKit`
-3. Add the products you need to your target.
-
----
-
-## Quick start: template picker in ~15 lines
+### Quick start: template picker in ~15 lines
 
 ```swift
 import SwiftUI
@@ -123,11 +96,9 @@ struct NewDocumentSheet: View {
 }
 ```
 
-Present it as a sheet — the user browses, picks **Use Template**, and your completion handler receives a `ScaffoldedTemplateProject` (destination root, entrypoint file, created files, source spec).
+The user browses, picks **Use Template**, and your completion handler receives a `ScaffoldedTemplateProject` (destination root, entrypoint file, created files, source spec).
 
-## Headless usage
-
-No UI needed? Drive the registry, search, and scaffolding directly:
+### Headless usage
 
 ```swift
 import TypstUniverseCore
@@ -150,42 +121,24 @@ let results = await universe.search(UniverseQuery(
 // 3. Download + scaffold a template into a project folder (like `typst init`)
 let spec = PackageSpec(namespace: .preview, name: "basic-resume", version: SemanticVersion(0, 2, 8))
 let project = try await universe.scaffoldTemplate(spec, to: newDocumentFolderURL)
-print("Ready to open: \(project.entrypointURL)")
 ```
 
-More recipes:
-
 ```swift
-// Ready-to-paste Typst snippet for a detail screen
 package.importSnippet()   // #import "@preview/cetz:0.3.1": *
 package.initCommand()     // typst init @preview/cetz:0.3.1
 
-// Live download progress (queued → downloading → extracting → installed)
-for await event in await universe.fetch(spec) {
+for await event in await universe.fetch(spec) {          // queued → downloading → extracting → installed
     if case let .downloading(p) = event { progressView.progress = p }
 }
 
-// In-memory scaffold for FileWrapper / SwiftData / Core Data hosts
-let files: [String: Data] = try await universe.scaffoldInMemory(spec)
-
-// Curated storefront sections
-let fresh = UniverseSearchEngine().newAndRecentlyUpdated(catalog) // ≤ 30 days
-let cvs = CuratedCollection.presets[1].packages(in: catalog)
-
-// Official templates, maintained by the Typst team
-// (github.com/typst/templates, published as @preview packages,
-// so they sync, download, and scaffold through the normal paths)
+let files: [String: Data] = try await universe.scaffoldInMemory(spec)   // FileWrapper/SwiftData hosts
+let cvs = CuratedCollection.presets[1].packages(in: catalog)            // curated storefront sections
 let official = CuratedCollection.officialTemplates.packages(in: catalog)
-
-// Point at a private registry or merge @local packages
-let client = TypstUniverseClient.live(configuration: .init(
-    storageDirectory: appSupportURL.appending(path: "TypstPackages"),
-    registry: MyEnterpriseRegistry(),
-    localDirectories: [localPackagesURL]
-))
 ```
 
-## Customizing the UI
+Point `TypstUniverseClient.live(configuration:)` at a private registry or merge `@local` packages for enterprise use.
+
+### Customizing the UI
 
 ```swift
 TypstUniverseBrowserView(model: model)
@@ -195,23 +148,21 @@ TypstUniverseBrowserView(model: model)
     .onPackageImportCopied { snippet in toast("Copied") }
 ```
 
-- `.typstUniverseConfiguration(_:)` — lock the browser to templates-only, pre-select a category, set accent color, hide the import snippet.
+- `.typstUniverseConfiguration(_:)` — lock to templates-only, pre-select a category, set accent color, hide the import snippet.
 - `.onTemplateSelected` / `.onTemplateScaffolded` / `.onPackageImportCopied` — observe without forking the views.
-- `TypstLivePreviewProviding` — inject your own Rust/WASM Typst renderer next to the static WebP preview.
+- `TypstLivePreviewProviding` — inject your own renderer next to the static WebP preview.
 - Every card, chip, picker, and progress indicator carries VoiceOver labels, scales with Dynamic Type (including Accessibility sizes), respects Reduce Motion and Increased Contrast, and mirrors for RTL layouts.
 
 For fully custom layouts, compose the primitives directly: `TemplateCardView`, `CategoryPill`, `VersionBadge`, `ImportCopyButton`, `PackageDetailView`, `CategorySidebarView`, `PackageGridView`.
 
----
-
-## How it works
+### Architecture
 
 ```
 ┌─ TypstUniverseCore (Foundation only, Apple platforms) ──────────┐
 │ Models: SemanticVersion, UniverseCategory (19),                 │
 │   UniverseDiscipline, PackageSpec, UniversePackage,             │
 │   TypstManifest, CuratedCollection, TypstUniverseError          │
-│ Registry: TypstRegistryProvider, OfficialUniverseRegistry      │
+│ Registry: TypstRegistryProvider, OfficialUniverseRegistry       │
 │   (ETag), IndexDecoder, VersionGrouper                          │
 │ Search: UniverseQuery, UniverseSearchEngine (facets + sort)     │
 │ Parsing: TypstTomlParser (pure Swift, typst.toml only)          │
@@ -234,7 +185,7 @@ For fully custom layouts, compose the primitives directly: `TemplateCardView`, `
 
 Upstream contracts (no scraping, no API keys): `…/preview/index.json` (ETag-cached) → `{name}-{version}.tar.gz` (immutable, cached) → `thumbnails/{name}-{version}[-small].webp` → `typst.toml` `[package]`/`[template]` tables. Unknown JSON fields, future categories/disciplines, and malformed dates degrade gracefully instead of failing the catalog load.
 
-## Security
+### Security
 
 Community tarballs are untrusted input — the extractor treats them that way:
 
@@ -244,7 +195,80 @@ Community tarballs are untrusted input — the extractor treats them that way:
 - Installs atomically via a unique staging directory + rename, so interrupted downloads never corrupt the cache.
 - HTTPS-only archive URLs; zero tracking, zero collected data ([PrivacyInfo](Sources/TypstUniverseUI/Resources/PrivacyInfo.xcprivacy)).
 
-See [SECURITY.md](SECURITY.md) to report a vulnerability, and the DocC article [“Archive Security”](Sources/TypstUniverseCore/Documentation.docc/Security.md) for the full model.
+The full threat model lives in the DocC article [“Archive Security”](Sources/TypstUniverseCore/Documentation.docc/Security.md). See [`Examples/UniverseExplorerApp`](Examples/UniverseExplorerApp) for a complete browser + “New from Template” flow on macOS, iOS, iPadOS, and visionOS.
+
+<a id="anytyp"></a>
+<p align="center">
+  <img src="assets/readme/section-anytyp.svg" width="100%" alt="AnyTyp — any document in, idiomatic .typ out" />
+</p>
+
+A pure-Swift conversion engine — OLE/ZIP/XML readers, per-format parsers, one information-preserving `Document` model, and a single Typst serializer with OMML/MathML/LaTeX math translation. Content-byte detection, no network, App-Sandbox safe.
+
+**18 input formats:** `doc` `docx` `odt` `pdf` `ppt` `pptx` `rtf` `epub` `xlsx` `ods` `odp` `csv` `tsv` `md` `html` `tex` `json` `txt` — with extension aliases (`docm`, `xls`, `ppsx`, `markdown`, `latex`, `htm`, …) resolving to the same parsers.
+
+```swift
+import AnyTyp
+
+// File URL, in-memory Data, sync or non-blocking @concurrent:
+let typst = try await AnyTyp.convertAsync(
+    fileURL,
+    options: AnyTypOptions(
+        standalone: true,                 // prepend #set page / #set par
+        title: "Quarterly Report",        // emits #set document(title:)
+        extractAssetsTo: assetsDirectoryURL  // embedded images → #image("...")
+    )
+)
+
+let fromCSV = try AnyTyp.convert(csvData, format: .csv)
+let doc = try await AnyTyp.parseDocumentAsync(docxData)   // structured document AST
+```
+
+```bash
+# CLI (same engine, exit codes 0/1/2/3 — 3 = PDF needs OCR)
+swift run AnyTypCLI report.docx -o report.typ
+swift run AnyTypCLI slides.pptx -o slides.typ --assets-dir assets
+swift run AnyTypCLI - --format csv < data.csv
+```
+
+Typst keeps what Markdown drops: merged table cells, multi-row headers, roman/offset enum numbering, footnotes, cross-references, and native math — all verified against the package's own Typst syntax parser.
+
+## Installation
+
+### Swift Package Manager (`Package.swift`)
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/VM451/TypstKit", from: "1.0.0")
+],
+targets: [
+    .target(name: "MyApp", dependencies: [
+        .product(name: "TypstKit", package: "TypstKit"),             // compiler port
+        .product(name: "TypstUniverseKit", package: "TypstKit"),     // registry + SwiftUI browser
+        .product(name: "AnyTyp", package: "TypstKit"),               // document → .typ
+    ])
+]
+```
+
+Only pay for what you use — each product is an independent library; `TypstUniverseKit` further splits into `TypstUniverseCore` → `TypstUniverseStorage` → `TypstUniverseUI` targets.
+
+### Xcode
+
+1. **File → Add Package Dependencies…**
+2. Enter `https://github.com/VM451/TypstKit`
+3. Add the products you need to your target.
+
+## Requirements
+
+| | Minimum |
+|---|---|
+| Swift | 6.4+ (strict concurrency, `-strict-concurrency=complete`) |
+| Xcode | 27+ (SwiftUI macros require the Xcode toolchain, not CLT alone) |
+| iOS / iPadOS | 27.0+ |
+| macOS | 27.0+ |
+| visionOS | 27.0+ |
+
+> Building from the command line? Use the Xcode toolchain:
+> `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`
 
 ## Testing
 
@@ -252,33 +276,30 @@ See [SECURITY.md](SECURITY.md) to report a vulnerability, and the DocC article [
 # Full suite (Xcode toolchain required for the SwiftUI target)
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 
-# Core only
+# Narrow lanes
 swift test --filter TypstUniverseCoreTests
+swift test --filter TypstSyntaxTests
+swift test --filter AnyTypTests
 ```
 
-Coverage: strict SemVer ordering, lenient index decoding (unknown categories, malformed dates/authors), search ranking + facet intersection + compiler filtering, TOML parsing, adversarial tar fixtures (traversal, absolute, symlink, depth, bad gzip), end-to-end scaffolding, and browser ViewModel state transitions. Verify locally with the Xcode 27 toolchain on macOS.
+300+ tests across six suites: SemVer ordering, lenient index decoding, search ranking + facet intersection, TOML parsing, adversarial tar fixtures (traversal, absolute, symlink, depth, bad gzip), end-to-end scaffolding, ViewModel transitions, the vendored Typst syntax corpus with exact diagnostic parity, evaluator behavior, format loaders, and AnyTyp conversion fixtures. Verify locally with the Xcode 27 toolchain on macOS.
 
 ## Documentation
 
-- This README for the fast path.
+- This README for the fast path; [ARCHITECTURE.md](ARCHITECTURE.md) for the port design; [PARITY_TRACKER.md](PARITY_TRACKER.md) for compiler parity status.
 - DocC catalogs in-source: `TypstUniverseCore/Documentation.docc` (Getting Started, Architecture, Archive Security, Searching), plus Storage and UI catalogs. Build in Xcode via **Product → Build Documentation**, or `swift package generate-documentation`.
 - `Examples/UniverseExplorerApp` — a runnable multiplatform reference app.
 
-## Examples
+## Roadmap & limits
 
-See [`Examples/UniverseExplorerApp`](Examples/UniverseExplorerApp) for a complete browser + “New from Template” flow on macOS, iOS, iPadOS, and visionOS.
-
-## Roadmap
-
-- **v1.0** — Core + Storage + UI + example app (this release).
-- **v2.0 (if needed)** — SQLite/FTS5 backing store once the catalog exceeds ~25,000 entries; optional remote curated-collection feed.
-
-Out of scope for v1.0: bundling the Typst compiler (attach your own via `TypstLivePreviewProviding`), Typst Pro account APIs, package-submission automation.
+- **Compiler port** — Phase 3 realize/layout, Phase 4 math/introspection/bibliography, Phase 5 exporters + incremental compile, Phase 6 IDE + `AnyTyp → compile → PDF` end-to-end (see [PARITY_TRACKER.md](PARITY_TRACKER.md)).
+- **TypstUniverseKit v2.0 (if needed)** — SQLite/FTS5 backing store once the catalog exceeds ~25,000 entries; optional remote curated-collection feed.
+- **Limits** — Apple platforms only (no Linux/Windows targets); the compiler port is pre-release, so documents cannot yet be rendered to PDF/SVG from this package (attach your own renderer via `TypstLivePreviewProviding`); no Typst Pro account APIs or package-submission automation.
 
 ## Contributing
 
-PRs welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for toolchain setup (Xcode vs. CLT), style rules (zero warnings, no `print()` in library code — use `KitLog`), and how to add tests. For bugs with untrusted-archive handling, read [SECURITY.md](SECURITY.md) first.
+PRs welcome. The gates: `swift build` with zero warnings, `swift test` green, no `print()` in library code (`KitLog` instead), no third-party runtime dependencies. See [AGENTS.md](AGENTS.md) for conventions, and treat untrusted-archive handling as security-sensitive — report extractor bypasses privately rather than as a public issue.
 
 ## License
 
-Apache-2.0 — see [LICENSE](LICENSE).
+Apache-2.0 — see [LICENSE](LICENSE). The `AnyTyp` subtree is MIT-licensed ([LICENSE-MIT](LICENSE-MIT)) and derives parser foundations from [`firecrawl/anydoc`](https://github.com/firecrawl/anydoc) — see [NOTICE](NOTICE) for attribution.
