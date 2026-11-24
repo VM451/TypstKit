@@ -32,8 +32,11 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
 - [x] VirtualPath / RootedPath / VirtualRoot / FileId interner /
       PackageSpec / PackageVersion / PathError / RealizeError
 - [x] Span / SpanNumber / SpanKind / DiagSpan / SubRange / Spanned
-- [ ] Source (source.rs: text, lines, encoding, edits)
+- [x] Source (source.rs: text, lines, encoding, edits, COW storage,
+      find/range via LinkedNode)
 - [x] Lines (lines.rs: line index, byte<->line/column mapping, edit/replace)
+- [x] LinkedNode (linked.rs: cursor navigation, find/findRange,
+      leafAt, prevLeaf/nextLeaf, modeAfter)
 - [x] Lexer (lexer.rs: markup/code/math modes, all token kinds)
 - [x] Parser (parser.rs: full CST construction, error recovery,
       packrat memoization for parenthesized exprs, depth cap)
@@ -42,7 +45,9 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
 - [x] set.rs (SyntaxSet bitmask + all grammar sets)
 - [x] Operators (UnOp/BinOp/Assoc precedence tables from ast.rs)
 - [ ] AST (ast.rs: typed node accessors)
-- [ ] Reparser (reparser.rs: incremental reparse)
+- [x] Reparser (reparser.rs: incremental reparse, tryReparseAndRenumber,
+      markup/block expr reparsing, delimiter-balance + warning-safety
+      checks, exponential renumbering)
 - [ ] package.rs remainder (PackageInfo, manifest parsing)
 - [ ] highlight.rs (IDE tags)
 - [ ] Gate: upstream tests/suite/syntax ports pass
