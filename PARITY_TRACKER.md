@@ -16,6 +16,9 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
 ### TypstUtils
 
 - [x] InternedString (string interner)
+- [x] Unicode tables (XID start/continue, CJK script) via
+      `Unicode.Scalar.Properties` + generated math-class table
+      (unicode-math-class 0.1.0, unicode-ident 1.0.27)
 - [ ] bitset.rs port
 - [ ] hash.rs port (FxHash-equivalent hasher)
 - [ ] collection.rs (smallvec/segmented vec equivalents)
@@ -31,12 +34,15 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
 - [x] Span / SpanNumber / SpanKind / DiagSpan / SubRange / Spanned
 - [ ] Source (source.rs: text, lines, encoding, edits)
 - [ ] Lines (lines.rs: line index, byte<->line/column mapping)
-- [ ] Lexer (lexer.rs: markup/code/math modes, all token kinds) — In Progress
-- [ ] Parser (parser.rs: full CST construction, error recovery)
-- [ ] Node (node.rs: green/red tree, SyntaxNode API)
+- [x] Lexer (lexer.rs: markup/code/math modes, all token kinds)
+- [x] Parser (parser.rs: full CST construction, error recovery,
+      packrat memoization for parenthesized exprs, depth cap)
+- [x] Node (node.rs: SyntaxNode API — class + in-place mutation
+      instead of Rust Arc CoW; see ARCHITECTURE.md)
+- [x] set.rs (SyntaxSet bitmask + all grammar sets)
+- [x] Operators (UnOp/BinOp/Assoc precedence tables from ast.rs)
 - [ ] AST (ast.rs: typed node accessors)
 - [ ] Reparser (reparser.rs: incremental reparse)
-- [ ] set.rs (node set queries)
 - [ ] package.rs remainder (PackageInfo, manifest parsing)
 - [ ] highlight.rs (IDE tags)
 - [ ] Gate: upstream tests/suite/syntax ports pass

@@ -71,6 +71,25 @@ public struct Span: Sendable {
         return Span(raw: pack(id: id, low: rangeBase + (s << rangeValueBits) + e))
     }
 
+    /// Create a span from a file id and raw span number (no range check;
+    /// used by the parser's number assignment).
+    static func fromNumber(id: FileId, _ num: UInt64) -> Span {
+        Span(raw: pack(id: id, low: num))
+    }
+
+    /// Create a span from a raw byte range instead of a span number.
+    /// Parts exceeding `2^23 - 1` are saturated.
+    static func fromRange(id: FileId, _ range: Range<Int>) -> Span {
+        let start = saturate(range.lowerBound, rangeValueMax)
+        let end = saturate(range.upperBound, rangeValueMax)
+        return Span(raw: pack(id: id, low: rangeBase + (start << rangeValueBits) + end))
+    }
+
+    /// Saturate an index into the given limit.
+    static func saturate(_ v: Int, _ limit: UInt64) -> UInt64 {
+        Swift.min(UInt64(Swift.max(0, v)), limit)
+    }
+
     /// Whether the span is detached.
     public var isDetached: Bool { raw == Self.detachedRaw }
 
@@ -260,4 +279,107 @@ extension Spanned where S == Span {
 
     /// Borrow the value with its span.
     public var asRef: Spanned<T, Span> { self }
+}
+
+/// Maps ranges in derived text back to ranges in the original text.
+/// Port of `RangeMapper` in span.rs.
+public struct RangeMapper: Hashable {
+    /// A mapping from an old index to a new one; guarantees `old <= new`.
+    struct Mapping: Hashable {
+        var old: Int
+        var new: Int
+    }
+
+    var vec: [Mapping]
+    var total: Int
+
+    /// Creates a new range mapper.
+    ///
+    /// `segments` are ranges in the original text that are consecutively
+    /// concatenated to produce the derived text. Segments must be in order.
+    public init(segments: [Range<Int>]) throws {
+        var map = Mapping(old: 0, new: 0)
+        var vec: [Mapping] = []
+        for range in segments {
+            let (start, end) = (range.lowerBound, range.upperBound)
+            if start > end || map.new > start {
+                throw RangeMapperError(message: "invalid mapper segment: (\(start), \(end))")
+            }
+            map.new = start
+            vec.append(map)
+            map.old += end - start
+        }
+        if vec.isEmpty {
+            self.vec = [map]
+            self.total = 0
+        } else {
+            self.vec = vec
+            self.total = map.old
+        }
+    }
+
+    /// The total length of the original text.
+    public var totalLen: Int { total }
+
+    /// Maps a range in the derived text back to a range in the original
+    /// text. `start <= end`, `end <= totalLen`.
+    public func map(_ range: Range<Int>) -> Range<Int> {
+        if range.upperBound == 0 {
+            let offset = vec[0].new
+            return offset ..< offset
+        } else if range.lowerBound == range.upperBound {
+            let offset = mapEnd(range.lowerBound)
+            return offset ..< offset
+        } else {
+            let start = mapStart(range.lowerBound)
+            let end = mapEnd(range.upperBound)
+            return start ..< end
+        }
+    }
+
+    /// Map a relative sub-range at an offset to a new sub-range.
+    public func mapSubRange(offset: Int, subRange: SubRange) -> SubRange {
+        let range = subRange.toAbsolute(offset)
+        let newOffset = mapStart(offset)
+        let start = mapStart(range.lowerBound)
+        let end = mapEnd(range.upperBound)
+        // Sub-ranges have start < end, so this cannot fail.
+        return SubRange(start - newOffset, end - newOffset)!
+    }
+
+    /// Map a single offset, preferring the second index if at a boundary.
+    func mapStart(_ offset: Int) -> Int {
+        // First index whose `old > offset`; step back one.
+        var lo = 0, hi = vec.count
+        while lo < hi {
+            let mid = (lo + hi) / 2
+            if vec[mid].old <= offset { lo = mid + 1 } else { hi = mid }
+        }
+        let m = vec[lo - 1]
+        return m.new + (offset - m.old)
+    }
+
+    /// Map a single offset, preferring the first index if at a boundary.
+    /// Panics if `offset` is 0.
+    func mapEnd(_ offset: Int) -> Int {
+        precondition(offset != 0)
+        var lo = 0, hi = vec.count
+        while lo < hi {
+            let mid = (lo + hi) / 2
+            if vec[mid].old < offset { lo = mid + 1 } else { hi = mid }
+        }
+        let m = vec[lo - 1]
+        return m.new + (offset - m.old)
+    }
+}
+
+/// Error for invalid range-mapper segments and length mismatches.
+public struct RangeMapperError: Error, Hashable, CustomStringConvertible {
+    public var message: String
+
+    public init(message: String) {
+        self.message = message
+    }
+
+    public var description: String { message }
 }

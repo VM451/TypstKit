@@ -37,9 +37,16 @@ Realize -> Eval -> Library -> Syntax -> Utils). No upward edges.
   interned `UInt16` handle (lock-guarded interner, `NSLock`).
 - Strings that appear as identifiers/field names/symbols use
   `InternedString` (TypstUtils) — a `UInt64` handle into a global pool.
-- Syntax trees use a persistent (immutable, path-copying) node
-  representation so `Source.edit` can reuse unchanged subtrees —
-  the Swift analogue of upstream's green/red tree.
+- Syntax trees use `final class SyntaxNode` with in-place mutation
+  (errors, kind conversion, child wrapping) instead of upstream's
+  `Arc` copy-on-write. Rationale: the parser mutates nodes through
+  markers (`p[m].convertToError`) in ways that map naturally to
+  reference semantics; Swift arrays of class references give the same
+  cheap-structural-sharing the parser's memo arena relies on. The
+  reparser (`reparser.rs`) will add subtree reuse on top — immutable
+  subtrees shared by reference already satisfy that need without a
+  separate green/red split. `LinkedNode` (cursor with span context)
+  is a lightweight struct over `SyntaxNode` + parent chain.
 
 ## Incremental compilation
 

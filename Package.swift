@@ -73,6 +73,10 @@ let package = Package(
             dependencies: ["TypstUniverseCore", "TypstUniverseStorage", "TypstUniverseUI"]
         ),
         .testTarget(
+            name: "TypstSyntaxTests",
+            dependencies: ["TypstSyntax"]
+        ),
+        .testTarget(
             name: "AnyTypTests",
             dependencies: ["AnyTyp"],
             swiftSettings: [
