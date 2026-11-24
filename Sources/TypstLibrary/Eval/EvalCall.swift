@@ -72,7 +72,7 @@ extension TypstSyntax.FuncCall {
 /// Call a function.
 /// Port of `call_func` in `call.rs` (the `stacker::maybe_grow` wrapper is
 /// unnecessary — Swift grows the native stack dynamically).
-private func callFunc(_ vm: inout Vm, _ theFunc: Func, _ args: TypstLibrary.Args,
+func callFunc(_ vm: inout Vm, _ theFunc: Func, _ args: TypstLibrary.Args,
                       _ span: Span) throws -> Value {
     let spanned = theFunc.spanned(span)
     return try unwrap(spanned.callValue(
@@ -148,7 +148,7 @@ private func evalCallArgs(
 
 /// The kind of callee in a field-access function call.
 /// Port of `FieldCallee` in `call.rs`.
-private enum FieldCallee {
+enum FieldCallee {
     /// A method on a type or on content, with the target value to be added
     /// as the first argument of the call.
     case method(Func, Value)
@@ -162,7 +162,7 @@ private enum FieldCallee {
 /// Evaluate a field-access callee, prioritizing associated functions of the
 /// value's type, "methods", over fields on the specific value.
 /// Port of `eval_field_callee` in `call.rs`.
-private func evalFieldCallee(
+func evalFieldCallee(
     _ vm: inout Vm, access: SyntaxNode, field: String, fieldSpan: Span,
     target: Value, inMath: Bool
 ) throws -> FieldCallee {
@@ -241,7 +241,7 @@ private func evalFieldCallee(
 /// Produce an error for calls to fields that do exist, but are not allowed
 /// to be called with field-access syntax.
 /// Port of `disallowed_field_call_error` in `call.rs`.
-private func disallowedFieldCallError(
+func disallowedFieldCallError(
     calleeValue: Value, access: SyntaxNode, field: String,
     target: Value, inMath: Bool
 ) -> SourceDiagnostics {
@@ -300,7 +300,7 @@ private func disallowedFieldCallError(
 /// element function, or the string "type" and the name of the value's
 /// type.
 /// Port of `element_or_type_with_name` in `call.rs`.
-private func elementOrTypeWithName(_ value: Value) -> (String, String) {
+func elementOrTypeWithName(_ value: Value) -> (String, String) {
     if case let .content(content) = value {
         return ("element", content.elem.name)
     }

@@ -179,6 +179,31 @@ struct EvalTests {
         #expect(item.elem.name == "item")
     }
 
+    @Test func mathEval() throws {
+        // Inline math produces an equation element.
+        let eq = try markup("$x + 1$")
+        #expect(eq.elem.name == "equation")
+        if let equation = eq.packed.element as? EquationElem {
+            #expect(!equation.block)
+        }
+
+        // Block math.
+        let blockEq = try markup("$ x + 1 $")
+        if let equation = blockEq.packed.element as? EquationElem {
+            #expect(equation.block)
+        }
+
+        // Fraction produces a frac element inside the equation body.
+        let frac = try markup("$a/b$")
+        #expect(frac.elem.name == "equation")
+
+        // Math call to a known function (sin is not in scope yet —
+        // undefined identifier should error, not crash).
+        #expect(throws: (any Error).self) {
+            _ = try markup("$nosuchfunc(x)$")
+        }
+    }
+
     @Test func errors() {
         #expect(throws: (any Error).self) { try eval("unknownvar") }
         #expect(throws: (any Error).self) { try eval("1 + \"a\"") }

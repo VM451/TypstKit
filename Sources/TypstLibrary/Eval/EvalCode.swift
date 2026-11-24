@@ -125,9 +125,27 @@ extension Expr {
         case .closure(let v): value = try v.eval(&vm)
         case .contextual, .moduleImport, .moduleInclude:
             throw evalNotImplemented(span, "this expression")
-        // Markup & math nodes — EvalMarkup/EvalMath pending.
+        // Math nodes — ported in EvalMath.swift.
+        case .equation(let v): value = .content(try v.eval(&vm))
+        case .math(let v): value = .content(try v.eval(&vm))
+        case .mathLetter(let v): value = .content(try v.eval(&vm))
+        case .mathSymbol(let v): value = .content(try v.eval(&vm))
+        case .mathNumber(let v): value = .content(try v.eval(&vm))
+        case .mathIdent(let v): value = try v.eval(&vm)
+        case .mathFieldAccess(let v): value = try v.eval(&vm)
+        case .mathShorthand(let v): value = try v.eval(&vm)
+        case .mathAlignPoint(let v): value = .content(try v.eval(&vm))
+        case .mathCall(let v): value = try v.eval(&vm)
+        case .mathOpening(let v): value = .content(try v.eval(&vm))
+        case .mathClosing(let v): value = .content(try v.eval(&vm))
+        case .mathDelimited(let v): value = .content(try v.eval(&vm))
+        case .mathAttach(let v): value = .content(try v.eval(&vm))
+        case .mathPrimes(let v): value = .content(try v.eval(&vm))
+        case .mathFrac(let v): value = .content(try v.eval(&vm))
+        case .mathRoot(let v): value = .content(try v.eval(&vm))
+        // Markup nodes handled above; remaining cases are pending ports.
         default:
-            throw evalNotImplemented(span, "markup/math expression")
+            throw evalNotImplemented(span, "expression")
         }
 
         let spanned = value.spanned(span)

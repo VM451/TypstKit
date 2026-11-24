@@ -203,6 +203,6 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
 - [x] `binding.rs` — let bindings + destructuring (`EvalBinding.swift`)
 - [x] `rules.rs` — set/show rule eval (`EvalRules.swift`)
 - [x] `markup.rs` — markup stream eval + leaf nodes (`EvalMarkup.swift`); list/enum/terms containers deferred to realization (upstream grouping rules)
-- [ ] `math.rs` eval
+- [x] `math.rs` eval — all math nodes + `eval_math_call`/`unparse_math_args`/`MathArgs.eval` (`EvalMath.swift`); `Scopes.getInMath` aliases `get` until the math scope lands
 - [ ] `import.rs` — module import/include
 - [ ] `lib.rs` — public entry points (`eval`, `eval_closure` wiring, `CapturesVisitor` IDE API)

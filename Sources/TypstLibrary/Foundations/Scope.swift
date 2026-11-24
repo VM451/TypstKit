@@ -481,6 +481,13 @@ public struct Scopes {
         return .failure(unknownVariable(name))
     }
 
+    /// Look up a variable in math mode. Currently aliases `get`; upstream
+    /// resolves through `base.math` and emits the math-flavored
+    /// unknown-variable diagnostic — lands with the math scope milestone.
+    public func getInMath(_ name: String, guard access: any BindingGuard) -> HintedStrResult<Value> {
+        get(name, guard: access)
+    }
+
     /// Look up a binding in math mode. Currently aliases `getBinding`;
     /// upstream resolves through `base.math` and emits the math-flavored
     /// unknown-variable diagnostic — lands with the math scope milestone.
