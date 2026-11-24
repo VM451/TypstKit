@@ -84,12 +84,15 @@ extension Str: NativeType {
 
 extension Bytes: NativeType {
     public static let typeInfo = TypeInfo(name: "bytes", longName: "bytes",
-        title: "Bytes", since: .version([0, 7, 0]))
+        title: "Bytes", since: .version([0, 7, 0]),
+        constructor: { Func(native: bytesConstruct) },
+        scope: { bytesScope() })
 }
 
 extension Label: NativeType {
     public static let typeInfo = TypeInfo(name: "label", longName: "label",
-        title: "Label", since: .forever)
+        title: "Label", since: .forever,
+        constructor: { Func(native: labelConstruct) })
 }
 
 extension Datetime: NativeType {
@@ -118,12 +121,16 @@ extension Styles: NativeType {
 
 extension ArrayValue: NativeType {
     public static let typeInfo = TypeInfo(name: "array", longName: "array",
-        title: "Array", since: .forever)
+        title: "Array", since: .forever,
+        constructor: { Func(native: arrayConstruct) },
+        scope: { arrayScope() })
 }
 
 extension Dict: NativeType {
     public static let typeInfo = TypeInfo(name: "dictionary", longName: "dictionary",
-        title: "Dictionary", since: .forever)
+        title: "Dictionary", since: .forever,
+        constructor: { Func(native: dictionaryConstruct) },
+        scope: { dictScope() })
 }
 
 extension Func: NativeType {

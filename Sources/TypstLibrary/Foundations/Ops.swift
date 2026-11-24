@@ -132,7 +132,7 @@ func ops_compare(_ lhs: Value, _ rhs: Value) -> StrResult<ComparisonResult> {
         return .success(a.items.count < b.items.count ? .orderedAscending
                         : a.items.count > b.items.count ? .orderedDescending : .orderedSame)
     default:
-        return .failure(StrError("cannot compare \(lhs.repr()) and \(rhs.repr())"))
+        return .failure(StrError("cannot compare \(lhs.type) and \(rhs.type)"))
     }
 }
 
@@ -151,11 +151,12 @@ private func ord3(_ a: Bool, _ b: Bool) -> ComparisonResult {
 }
 
 /// Build an upstream `mismatch!`-style error: literal template with
-/// `{0}`/`{1}` placeholders replaced by reprs.
+/// `{0}`/`{1}` placeholders replaced by the values' type names
+/// (upstream passes `value.ty()` to `eco_format!`).
 private func mismatch(_ fmt: String, _ args: Value...) -> HintedStrResult<Value> {
     var msg = fmt
     for (i, arg) in args.enumerated() {
-        msg = msg.replacingOccurrences(of: "{\(i)}", with: arg.repr())
+        msg = msg.replacingOccurrences(of: "{\(i)}", with: "\(arg.type)")
     }
     return .failure(HintedString(msg))
 }
@@ -184,6 +185,45 @@ func ops_in(_ access: any BindingGuard, _ lhs: Value, _ rhs: Value, negate: Bool
     }
     return mismatch(negate ? "cannot apply 'not in' to {0} and {1}" : "cannot apply 'in' to {0} and {1}",
                     lhs, rhs)
+}
+
+/// Join a value with another value.
+///
+/// Port of `ops::join` in `ops.rs`.
+func ops_join(_ lhs: Value, _ rhs: Value) -> StrResult<Value> {
+    switch (lhs, rhs) {
+    case let (a, .none): return .success(a)
+    case let (.none, b): return .success(b)
+    case let (.symbol(a), .symbol(b)):
+        return .success(.str(Str(a.get + b.get)))
+    case let (.str(a), .str(b)):
+        return .success(.str(Str(a.value + b.value)))
+    case let (.str(a), .symbol(b)):
+        return .success(.str(Str(a.value + b.get)))
+    case let (.symbol(a), .str(b)):
+        return .success(.str(Str(a.get + b.value)))
+    case let (.bytes(a), .bytes(b)):
+        return .success(.bytes(Bytes(a.storage + b.storage)))
+    case let (.content(a), .content(b)):
+        return .success(.content(a + b))
+    case let (.content(a), .symbol(b)):
+        return .success(.content(a + SymbolElem.packed(b.get)))
+    case let (.content(a), .str(b)):
+        return .success(.content(a + TextElem.packed(b.value)))
+    case let (.str(a), .content(b)):
+        return .success(.content(TextElem.packed(a.value) + b))
+    case let (.symbol(a), .content(b)):
+        return .success(.content(SymbolElem.packed(a.get) + b))
+    case let (.array(a), .array(b)):
+        return .success(.array(a + b))
+    case let (.dict(a), .dict(b)):
+        return .success(.dict(a.merged(with: b)))
+    case let (.arguments(a), .arguments(b)):
+        return .success(.arguments(a + b))
+    default:
+        return .failure(StrError(
+            "cannot join \(lhs.type) with \(rhs.type)"))
+    }
 }
 
 /// The `+` operator.

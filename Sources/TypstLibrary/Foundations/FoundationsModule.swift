@@ -37,6 +37,9 @@ public func defineFoundations(_ global: Scope) {
     global.defineFunc(panicFunc)
     global.defineFunc(assertFunc)
 
+    // Upstream `lib.rs` defines `range` globally (also in `array`'s scope).
+    global.defineFunc(arrayRange)
+
     global.define("calc", .module(calcModule()))
 
     global.resetCategory()
