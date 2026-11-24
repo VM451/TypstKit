@@ -808,6 +808,11 @@ where T: OptionalCast & Equatable & IntoValue,
     }
 }
 
+extension Sides: Default where T: OptionalCast {
+    /// All sides unspecified (upstream `Default` derive on `Sides<Option<T>>`).
+    public static var `default`: Sides<T> { .splat(.unspecified) }
+}
+
 extension Sides: Fold where T: AlternativeFold {
     /// Component-wise `fold_or` (upstream `Fold for Sides<Option<T>>`).
     public static func fold(_ inner: Sides<T>, _ outer: Sides<T>) -> Sides<T> {

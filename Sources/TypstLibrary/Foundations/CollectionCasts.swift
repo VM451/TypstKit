@@ -145,6 +145,31 @@ extension NonZeroUsize: Castable, IntoValue, FromValue {
     }
 }
 
+
+// MARK: - NonZeroU32 (upstream `cast! { NonZeroU32, .. }` in int.rs)
+
+/// A positive `u32`.
+public struct NonZeroU32: Sendable, Hashable {
+    public var value: UInt32
+
+    public init(value: UInt32) { self.value = value }
+}
+
+extension NonZeroU32: Castable, IntoValue, FromValue {
+    public static var input: CastInfo { .type(Type.of(Int64.self)) }
+    public static var output: CastInfo { .type(Type.of(Int64.self)) }
+    public static func castable(_ value: Value) -> Bool { intCastable(value) }
+
+    public func intoValue() -> Value { .int(Int64(value)) }
+
+    public static func fromValue(_ value: Value) -> HintedStrResult<Self> {
+        guard case let .int(v) = value, v > 0, v <= Int64(UInt32.max) else {
+            return .failure(HintedString("number must be a positive 32-bit integer"))
+        }
+        return .success(NonZeroU32(value: UInt32(v)))
+    }
+}
+
 // MARK: - Endianness (upstream `#[derive(Cast)] enum Endianness` in int.rs)
 
 /// Byte order for integer/float byte conversions.

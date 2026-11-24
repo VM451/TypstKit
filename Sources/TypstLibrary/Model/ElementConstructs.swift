@@ -588,6 +588,201 @@ extension DocumentElem {
     }
 }
 
+
+// MARK: - Constructs: grid & table
+
+/// Shared gutter-fallback parse for `grid`/`table` set rules: `gutter`
+/// feeds `column-gutter` and `row-gutter` when they are absent
+/// (upstream `#[parse]` on `column_gutter`/`row_gutter`).
+func gutterFallback<T: FromValue>(_ args: inout Args,
+                                           column: String,
+                                           row: String) throws
+    -> (column: T?, row: T?) {
+    let gutter: T? = try args.namedT("gutter")
+    let columnValue: T? = try args.namedT(column) ?? gutter
+    let rowValue: T? = try args.namedT(row) ?? gutter
+    return (columnValue, rowValue)
+}
+
+extension GridElem {
+    public static func construct(engine: inout Engine, args: inout Args) throws -> Content {
+        var elem = GridElem()
+        elem.columns = try args.namedT("columns") ?? elem.columns
+        elem.rows = try args.namedT("rows") ?? elem.rows
+        let gutters: (TrackSizings?, TrackSizings?) = try gutterFallback(
+            &args, column: "column-gutter", row: "row-gutter")
+        elem.columnGutter = gutters.0 ?? elem.columnGutter
+        elem.rowGutter = gutters.1 ?? elem.rowGutter
+        elem.inset = try args.namedT("inset") ?? elem.inset
+        elem.align = try args.namedT("align") ?? elem.align
+        elem.fill = try args.namedT("fill") ?? elem.fill
+        elem.stroke = try args.namedT("stroke") ?? elem.stroke
+        elem.children = try args.allT()
+        elem.span = args.span
+        try args.finishT()
+        return Content(elem)
+    }
+}
+
+extension TableElem {
+    public static func construct(engine: inout Engine, args: inout Args) throws -> Content {
+        var elem = TableElem()
+        elem.columns = try args.namedT("columns") ?? elem.columns
+        elem.rows = try args.namedT("rows") ?? elem.rows
+        let gutters: (TrackSizings?, TrackSizings?) = try gutterFallback(
+            &args, column: "column-gutter", row: "row-gutter")
+        elem.columnGutter = gutters.0 ?? elem.columnGutter
+        elem.rowGutter = gutters.1 ?? elem.rowGutter
+        elem.inset = try args.namedT("inset") ?? elem.inset
+        elem.align = try args.namedT("align") ?? elem.align
+        elem.fill = try args.namedT("fill") ?? elem.fill
+        elem.stroke = try args.namedT("stroke") ?? elem.stroke
+        elem.children = try args.allT()
+        elem.span = args.span
+        try args.finishT()
+        return Content(elem)
+    }
+}
+
+extension GridHeader {
+    public static func construct(engine: inout Engine, args: inout Args) throws -> Content {
+        var elem = GridHeader()
+        elem.`repeat` = try args.namedT("repeat") ?? elem.`repeat`
+        elem.level = try args.namedT("level") ?? elem.level
+        elem.children = try args.allT()
+        elem.span = args.span
+        try args.finishT()
+        return Content(elem)
+    }
+}
+
+extension GridFooter {
+    public static func construct(engine: inout Engine, args: inout Args) throws -> Content {
+        var elem = GridFooter()
+        elem.`repeat` = try args.namedT("repeat") ?? elem.`repeat`
+        elem.children = try args.allT()
+        elem.span = args.span
+        try args.finishT()
+        return Content(elem)
+    }
+}
+
+extension TableHeader {
+    public static func construct(engine: inout Engine, args: inout Args) throws -> Content {
+        var elem = TableHeader()
+        elem.`repeat` = try args.namedT("repeat") ?? elem.`repeat`
+        elem.level = try args.namedT("level") ?? elem.level
+        elem.children = try args.allT()
+        elem.span = args.span
+        try args.finishT()
+        return Content(elem)
+    }
+}
+
+extension TableFooter {
+    public static func construct(engine: inout Engine, args: inout Args) throws -> Content {
+        var elem = TableFooter()
+        elem.`repeat` = try args.namedT("repeat") ?? elem.`repeat`
+        elem.children = try args.allT()
+        elem.span = args.span
+        try args.finishT()
+        return Content(elem)
+    }
+}
+
+extension GridHLine {
+    public static func construct(engine: inout Engine, args: inout Args) throws -> Content {
+        var elem = GridHLine()
+        elem.y = try args.namedT("y") ?? elem.y
+        elem.start = try args.namedT("start") ?? elem.start
+        if let end: NonZeroUsize? = try args.namedT("end") { elem.end = end }
+        if let stroke: Stroke<Length>? = try args.namedT("stroke") { elem.stroke = stroke }
+        elem.position = try args.namedT("position") ?? elem.position
+        elem.span = args.span
+        try args.finishT()
+        return Content(elem)
+    }
+}
+
+extension GridVLine {
+    public static func construct(engine: inout Engine, args: inout Args) throws -> Content {
+        var elem = GridVLine()
+        elem.x = try args.namedT("x") ?? elem.x
+        elem.start = try args.namedT("start") ?? elem.start
+        if let end: NonZeroUsize? = try args.namedT("end") { elem.end = end }
+        if let stroke: Stroke<Length>? = try args.namedT("stroke") { elem.stroke = stroke }
+        elem.position = try args.namedT("position") ?? elem.position
+        elem.span = args.span
+        try args.finishT()
+        return Content(elem)
+    }
+}
+
+extension TableHLine {
+    public static func construct(engine: inout Engine, args: inout Args) throws -> Content {
+        var elem = TableHLine()
+        elem.y = try args.namedT("y") ?? elem.y
+        elem.start = try args.namedT("start") ?? elem.start
+        if let end: NonZeroUsize? = try args.namedT("end") { elem.end = end }
+        if let stroke: Stroke<Length>? = try args.namedT("stroke") { elem.stroke = stroke }
+        elem.position = try args.namedT("position") ?? elem.position
+        elem.span = args.span
+        try args.finishT()
+        return Content(elem)
+    }
+}
+
+extension TableVLine {
+    public static func construct(engine: inout Engine, args: inout Args) throws -> Content {
+        var elem = TableVLine()
+        elem.x = try args.namedT("x") ?? elem.x
+        elem.start = try args.namedT("start") ?? elem.start
+        if let end: NonZeroUsize? = try args.namedT("end") { elem.end = end }
+        if let stroke: Stroke<Length>? = try args.namedT("stroke") { elem.stroke = stroke }
+        elem.position = try args.namedT("position") ?? elem.position
+        elem.span = args.span
+        try args.finishT()
+        return Content(elem)
+    }
+}
+
+extension GridCell {
+    public static func construct(engine: inout Engine, args: inout Args) throws -> Content {
+        var elem = GridCell(body: try args.expectT("body"))
+        elem.x = try args.namedT("x") ?? elem.x
+        elem.y = try args.namedT("y") ?? elem.y
+        elem.colspan = try args.namedT("colspan") ?? elem.colspan
+        elem.rowspan = try args.namedT("rowspan") ?? elem.rowspan
+        elem.inset = try args.namedT("inset") ?? elem.inset
+        elem.align = try args.namedT("align") ?? elem.align
+        elem.fill = try args.namedT("fill") ?? elem.fill
+        elem.stroke = try args.namedT("stroke") ?? elem.stroke
+        elem.breakable = try args.namedT("breakable") ?? elem.breakable
+        elem.span = args.span
+        try args.finishT()
+        return Content(elem)
+    }
+}
+
+extension TableCell {
+    public static func construct(engine: inout Engine, args: inout Args) throws -> Content {
+        var elem = TableCell(body: try args.expectT("body"))
+        elem.x = try args.namedT("x") ?? elem.x
+        elem.y = try args.namedT("y") ?? elem.y
+        elem.colspan = try args.namedT("colspan") ?? elem.colspan
+        elem.rowspan = try args.namedT("rowspan") ?? elem.rowspan
+        elem.inset = try args.namedT("inset") ?? elem.inset
+        elem.align = try args.namedT("align") ?? elem.align
+        elem.fill = try args.namedT("fill") ?? elem.fill
+        elem.stroke = try args.namedT("stroke") ?? elem.stroke
+        elem.breakable = try args.namedT("breakable") ?? elem.breakable
+        // `kind`/`is_repeated` are `#[internal] #[parse]` constants upstream.
+        elem.span = args.span
+        try args.finishT()
+        return Content(elem)
+    }
+}
+
 // MARK: - Element scopes & registration
 
 extension ListElem {
@@ -632,6 +827,7 @@ func defineModelElements(into global: Scope) {
     defineElement(into: global, ListElem.self)
     defineElement(into: global, EnumElem.self)
     defineElement(into: global, TermsElem.self)
+    defineElement(into: global, TableElem.self)
     defineElement(into: global, LinkElem.self)
     defineElement(into: global, RefElem.self)
     defineElement(into: global, HeadingElem.self)
@@ -663,6 +859,7 @@ func defineLayoutElements(into global: Scope) {
     defineElement(into: global, RotateElem.self)
     defineElement(into: global, SkewElem.self)
     defineElement(into: global, LayoutElem.self)
+    defineElement(into: global, GridElem.self)
 
     // Upstream `lib.rs` global prelude: alignment and direction values.
     global.define("ltr", .dynamic(Dir.ltr))

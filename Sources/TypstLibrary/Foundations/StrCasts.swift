@@ -286,3 +286,8 @@ extension Base: Castable, IntoValue, FromValue {
         return .success(.user(v))
     }
 }
+
+extension Optional: Default {
+    /// `None` is the default.
+    public static var `default`: Optional<Wrapped> { nil }
+}

@@ -365,3 +365,8 @@ public func / (lhs: Duration, rhs: Duration) -> Double { lhs.seconds / rhs.secon
 extension Smart: Equatable where T: Equatable {}
 extension Smart: @unchecked Sendable {}
 extension Smart: Hashable where T: Hashable {}
+
+extension Smart: Default {
+    /// `Smart::Auto` is the default (upstream `impl Default for Smart`).
+    public static var `default`: Smart<T> { .auto }
+}
