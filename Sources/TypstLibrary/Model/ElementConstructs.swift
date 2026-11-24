@@ -875,3 +875,14 @@ func defineLayoutElements(into global: Scope) {
     global.define("horizon", .dynamic(Alignment.horizon))
     global.define("bottom", .dynamic(Alignment.bottom))
 }
+
+/// Port of upstream `visualize/mod.rs` element registration for the
+/// shape elements ported so far (`ImageElem`/`CurveElem` pending).
+func defineVisualizeElements(into global: Scope) {
+    defineElement(into: global, LineElem.self)
+    defineElement(into: global, RectElem.self)
+    defineElement(into: global, SquareElem.self)
+    defineElement(into: global, EllipseElem.self)
+    defineElement(into: global, CircleElem.self)
+    defineElement(into: global, PolygonElem.self)
+}

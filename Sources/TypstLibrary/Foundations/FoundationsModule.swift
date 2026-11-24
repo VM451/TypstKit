@@ -52,6 +52,7 @@ public func defineFoundations(_ global: Scope, inputs: Dict = Dict()) {
     // `layout/mod.rs` `define_elem` calls for the ported elements.
     defineModelElements(into: global)
     defineLayoutElements(into: global)
+    defineVisualizeElements(into: global)
 
     global.resetCategory()
 }

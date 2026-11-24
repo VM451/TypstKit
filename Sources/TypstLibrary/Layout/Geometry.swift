@@ -842,3 +842,43 @@ extension Corners: Resolve where T: Resolve {
         map { $0.resolve(styles) }
     }
 }
+
+// MARK: - Axes defaults & value casts
+
+extension Axes: Default where T: Default {
+    /// `Axes::default()` — both components at their default
+    /// (upstream `#[derive(Default)]` on `Axes<T>`).
+    public static var `default`: Axes<T> { Axes(x: .default, y: .default) }
+}
+
+extension Axes: Castable, IntoValue, FromValue
+    where T: Castable & IntoValue & FromValue {
+    /// Upstream `Reflect for Axes<T>`: a two-item array.
+    public static var input: CastInfo { ArrayValue.input }
+    public static var output: CastInfo { input }
+
+    public static func castable(_ value: Value) -> Bool {
+        guard case let .array(a) = value, a.items.count == 2 else { return false }
+        return T.castable(a.items[0]) && T.castable(a.items[1])
+    }
+
+    public func intoValue() -> Value {
+        .array(ArrayValue(items: [x.intoValue(), y.intoValue()]))
+    }
+
+    /// Upstream `FromValue for Axes<T>`: an array of exactly two items.
+    public static func fromValue(_ value: Value) -> HintedStrResult<Self> {
+        guard case let .array(array) = value else {
+            return .failure(Self.error(value))
+        }
+        var iter = array.items.makeIterator()
+        guard let a = iter.next(), let b = iter.next(), iter.next() == nil else {
+            return .failure(HintedString(
+                message: "array must contain exactly two items",
+                hints: ["the first item determines the value for the X axis and the second item the value for the Y axis"]))
+        }
+        return T.fromValue(a).flatMap { x in
+            T.fromValue(b).map { Axes(x: x, y: $0) }
+        }
+    }
+}

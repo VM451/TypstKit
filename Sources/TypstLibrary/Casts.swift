@@ -782,3 +782,21 @@ extension UInt64: Castable, IntoValue, FromValue {
         return .success(u)
     }
 }
+
+extension FillRule: Castable, IntoValue, FromValue {
+    public static var input: CastInfo {
+        .union(allCases.map { .value(.str(Str($0.rawValue)), doc: "") })
+    }
+    public static var output: CastInfo { input }
+    public static func castable(_ value: Value) -> Bool {
+        guard case let .str(s) = value else { return false }
+        return FillRule(rawValue: s.value) != nil
+    }
+    public func intoValue() -> Value { .str(Str(rawValue)) }
+    public static func fromValue(_ value: Value) -> HintedStrResult<Self> {
+        guard case let .str(s) = value, let v = FillRule(rawValue: s.value) else {
+            return .failure(error(value))
+        }
+        return .success(v)
+    }
+}

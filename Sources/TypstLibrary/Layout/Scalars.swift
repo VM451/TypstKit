@@ -652,3 +652,9 @@ extension Rel: Fold where T: Fold {
         Rel(rel: inner.rel, abs: T.fold(inner.abs, outer.abs))
     }
 }
+
+extension Rel: Default {
+    /// `Rel::default()` — zero ratio, zero absolute part
+    /// (upstream `#[derive(Default)]` on `Rel<T>`).
+    public static var `default`: Rel<T> { .zero() }
+}
