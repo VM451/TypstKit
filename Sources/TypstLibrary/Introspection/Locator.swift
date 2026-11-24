@@ -1,4 +1,6 @@
 import Foundation
+import TypstSyntax
+import TypstUtils
 
 /// A locator assigns unique locations to elements during realization and
 /// layout. See the type-level docs in upstream `locator.rs`.

@@ -30,6 +30,16 @@ public struct PackedElement: Sendable {
         element = typed
         hash = hash128(typed)
     }
+    /// Mutate the type-erased element through an existential, refreshing its
+    /// data hash. Used for capability-protocol mutation (e.g. `Synthesize`).
+    public mutating func mutateAny(
+        _ body: (inout any NativeElement) throws -> Void
+    ) throws {
+        var typed = element
+        try body(&typed)
+        element = typed
+        hash = hash128(typed)
+    }
 }
 
 extension PackedElement: Hashable {
@@ -318,6 +328,45 @@ public struct Content: Sendable {
     }
 }
 
+extension Content: DefaultConstructible {
+    public static var defaultValue: Content { .empty }
+}
+
+extension Content {
+    /// Whether the packed element is math-compatible.
+    /// Port of upstream's `Mathy` capability check.
+    public var isMathy: Bool { packed.element is any MathyCapable }
+
+    /// Whether the packed element synthesizes fields.
+    /// Port of upstream's `Synthesize` capability check.
+    public var isSynthesizing: Bool { packed.element is any SynthesizeCapable }
+
+    /// Whether the packed element defines show-set rules.
+    /// Port of upstream's `ShowSet` capability check.
+    public var isShowSettable: Bool { packed.element is any ShowSetCapable }
+
+    /// Run `Synthesize::synthesize` on the packed element if it conforms.
+    public mutating func synthesizeElement(engine: inout Engine,
+                                           styles: StyleChain) throws {
+        try packed.mutateAny { element in
+            guard var synth = element as? any SynthesizeCapable else { return }
+            try synth.synthesize(engine: &engine, styles: styles)
+            element = synth as any NativeElement
+        }
+    }
+
+    /// Run `Synthesize::synthesize`, discarding errors (pre-synthesis).
+    public mutating func trySynthesizeElement(engine: inout Engine,
+                                              styles: StyleChain) {
+        try? synthesizeElement(engine: &engine, styles: styles)
+    }
+
+    /// The `ShowSet` styles for the packed element, if it conforms.
+    public func showSetStyles(styles: StyleChain) -> Styles? {
+        (packed.element as? any ShowSetCapable)?.showSet(styles: styles)
+    }
+}
+
 extension Content: Hashable {
     public static func == (a: Content, b: Content) -> Bool {
         a.packed == b.packed && a.label == b.label && a.location == b.location
@@ -596,6 +645,10 @@ public struct Element: Sendable, Hashable {
     /// Port of upstream `Element::is_locatable`.
     public var isLocatable: Bool { can(.locatable) }
 
+    /// Whether the element is tagged in PDF files.
+    /// Port of upstream `Element::is_tagged`.
+    public var isTagged: Bool { can(.tagged) }
+
     /// Whether the element is excluded from queries.
     /// Upstream keeps a dedicated vtable flag; the port maps it to the
     /// absence of the `queriable` capability.
@@ -663,7 +716,7 @@ extension NativeElement {
 public struct SequenceElem: NativeElement {
     public static let info = ElementInfo(
         name: "sequence",
-        capabilities: [.locatable]
+        capabilities: []
     )
 
     /// The children.

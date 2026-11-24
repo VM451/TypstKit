@@ -1,4 +1,6 @@
 import Foundation
+import TypstSyntax
+import TypstUtils
 
 /// Marks the start or end of a locatable element.
 ///

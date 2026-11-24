@@ -24,6 +24,11 @@ public struct Engine {
     /// The current route (call stack for recursion detection).
     public var route: Route
 
+    /// Optional hook resolving measurement-mode locators against the
+    /// introspector. Populated by the introspection milestone; `nil` falls
+    /// back to the base location.
+    public var measureLocation: ((Hash128, Location, Span) -> Location?)?
+
     /// The standard library (convenience accessor over `world.library`).
     public var library: Library { world.library.value }
 
@@ -33,6 +38,21 @@ public struct Engine {
         self.traced = Traced()
         self.sink = Sink()
         self.route = Route()
+        self.measureLocation = nil
+    }
+
+    /// Handles a result without immediately terminating execution. Instead, it
+    /// produces a delayed error that is only promoted to a fatal one if it
+    /// remains by the end of the introspection loop.
+    ///
+    /// Port of `Engine::delay`.
+    public mutating func delay<T: DefaultConstructible>(_ result: SourceResult<T>) -> T {
+        switch result {
+        case let .success(value): return value
+        case let .failure(errors):
+            sink.delayedErrors(errors.diagnostics)
+            return T.defaultValue
+        }
     }
 }
 
@@ -65,6 +85,15 @@ public protocol World: Sendable {
     func today(_ offset: Duration?) -> Datetime?
 }
 
+/// An export format registered with the library.
+///
+/// Port of the `Format` trait in `format.rs` — only the surface needed by
+/// realization (`elem`) is required so far.
+public protocol Format: Sendable {
+    /// The format's element.
+    var elem: Element { get }
+}
+
 /// The standard library: global scope plus module definitions.
 ///
 /// Port of `Library` in `engine.rs`/`lib.rs`.
@@ -82,12 +111,24 @@ public struct Library: Sendable, Hashable {
     /// `LibraryBuilder::with_inputs`).
     public var inputs: Dict
 
+    /// The built-in show rules.
+    /// Port of upstream `Library::rules`.
+    public var rules: NativeRuleMap
+
+    /// Registered export formats.
+    /// Port of upstream `Library::formats`.
+    public var formats: [any Format]
+
     public init(scope: Scope, features: Features = Features(),
-                routines: Routines = Routines(), inputs: Dict = Dict()) {
+                routines: Routines = Routines(), inputs: Dict = Dict(),
+                rules: NativeRuleMap = NativeRuleMap(),
+                formats: [any Format] = []) {
         self.scope = scope
         self.features = features
         self.routines = routines
         self.inputs = inputs
+        self.rules = rules
+        self.formats = formats
     }
 
     /// Configure the inputs visible through `sys.inputs`.
@@ -102,13 +143,16 @@ public struct Library: Sendable, Hashable {
 extension Library {
     public static func == (lhs: Library, rhs: Library) -> Bool {
         lhs.scope === rhs.scope && lhs.features == rhs.features
-            && lhs.routines === rhs.routines
+            && lhs.routines === rhs.routines && lhs.rules === rhs.rules
+            && lhs.formats.map(\.elem) == rhs.formats.map(\.elem)
     }
 
     public func hash(into hasher: inout Hasher) {
         hasher.combine(ObjectIdentifier(scope))
         hasher.combine(features)
         hasher.combine(ObjectIdentifier(routines))
+        hasher.combine(ObjectIdentifier(rules))
+        hasher.combine(formats.map(\.elem))
     }
 }
 
@@ -123,10 +167,23 @@ public final class Routines: @unchecked Sendable {
     public var evalClosure:
         (@Sendable (Func, Closure, inout Engine, Context, Args) -> SourceResult<Value>)?
 
+    /// Realizes content into a flat list of well-known, styled items.
+    /// Port of `routines::realize`.
+    public var realize:
+        (@Sendable (RealizationKind, inout Engine, SplitLocator, Content, StyleChain)
+            -> SourceResult<[RealizePair]>)?
+
     public init(
-        evalClosure: (@Sendable (Func, Closure, inout Engine, Context, Args) -> SourceResult<Value>)? = evalClosureImpl
+        evalClosure: (@Sendable (Func, Closure, inout Engine, Context, Args) -> SourceResult<Value>)? = evalClosureImpl,
+        realize: (@Sendable (RealizationKind, inout Engine, SplitLocator, Content, StyleChain)
+            -> SourceResult<[RealizePair]>)? = { kind, engine, locator, content, styles in
+            TypstLibrary.realize(
+                kind: kind, engine: &engine, locator: locator,
+                content: content, styles: styles)
+        }
     ) {
         self.evalClosure = evalClosure
+        self.realize = realize
     }
 }
 
@@ -160,8 +217,25 @@ public struct EvalTracepoint: Sendable, Hashable {
 /// Diagnostic sink collecting warnings/errors during evaluation.
 public final class Sink: @unchecked Sendable {
     public private(set) var diagnostics: [SourceDiagnostic] = []
+    /// Errors that are only promoted to fatal ones if they remain by the end
+    /// of the introspection loop (upstream `Sink::delayed`).
+    public private(set) var delayed: [SourceDiagnostic] = []
     public func warn(_ diagnostic: SourceDiagnostic) { diagnostics.append(diagnostic) }
     public func error(_ diagnostic: SourceDiagnostic) { diagnostics.append(diagnostic) }
+
+    /// Add delayed errors.
+    /// Port of upstream `Sink::delayed_errors`.
+    public func delayedErrors(_ errors: [SourceDiagnostic]) {
+        delayed.append(contentsOf: errors)
+    }
+
+    /// Take the stored delayed errors.
+    /// Port of upstream `Sink::delayed`.
+    @discardableResult
+    public func takeDelayed() -> [SourceDiagnostic] {
+        defer { delayed.removeAll() }
+        return delayed
+    }
 }
 
 /// The call route for recursion detection.
@@ -196,6 +270,14 @@ public struct Route: Sendable {
         copy.len += 1
         return copy
     }
+
+    /// Increase the nesting depth for this route segment.
+    /// Port of `Route::increase`.
+    public mutating func increase() { len += 1 }
+
+    /// Decrease the nesting depth for this route segment.
+    /// Port of `Route::decrease`.
+    public mutating func decrease() { len -= 1 }
 
     /// Whether the route's depth is within `depth`.
     /// Port of `Route::within`.

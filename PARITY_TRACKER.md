@@ -206,7 +206,7 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
 - [ ] Public API docs + examples
 - [ ] Final gate: all targets green, clean tree
 
-## typst-eval (in progress)
+## typst-eval — COMPLETE
 
 - [x] `vm.rs` — `Vm` struct (engine/flow/scopes/inspected/context), `define`/`bind`/`traceAt`/`trace`, `hint_if_shadowed_std`, `is` keyword warning
 - [x] `flow.rs` — `FlowEvent` (break/continue/return+conditional) with `forbidden()` errors
@@ -221,4 +221,18 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
 - [x] `markup.rs` — markup stream eval + leaf nodes (`EvalMarkup.swift`); list/enum/terms containers deferred to realization (upstream grouping rules)
 - [x] `math.rs` eval — all math nodes + `eval_math_call`/`unparse_math_args`/`MathArgs.eval` (`EvalMath.swift`); `Scopes.getInMath` aliases `get` until the math scope lands
 - [x] `import.rs` — ModuleImport/ModuleInclude eval, file+package resolution, manifest parsing (`EvalImport.swift`)
-- [x] `lib.rs` — `evalModule`/`evalString` entry points, `SpanMode`, route file-id chain for cycle detection, `flow.forbidden()` at entry (`EvalEntry.swift`); `.contextual` expr eval deferred (needs ContextElem — realization milestone)
+- [x] `lib.rs` — `evalModule`/`evalString` entry points, `SpanMode`, route file-id chain for cycle detection, `flow.forbidden()` at entry (`EvalEntry.swift`); `.contextual` expr eval — ContextElem + context-node closure support landed
+
+## typst-realize (in progress)
+
+- [x] `spaces.rs` — `SpaceState`/`SpaceAction`, `collapse_spaces` in-place algorithm, `collapse_transition_textual`, `discard_space_between` via generated Unicode no-space tables (`TypstUtils/SpaceDiscarding.swift`) (`Realize/Spaces.swift`)
+- [x] `lib.rs` — `realize()` entry, visit pipeline (kind rules → show rules → sequence/styled recursion → grouping → filter), `verdict()`/`prepare()`, grouping machinery (`GroupingRule`/`GroupingEffect`/finishers: textual/par/cites/list-like), regex show rules with UTF-8 byte offsets, `repack`/`select_span` (`Realize/Realize.swift`, `RealizeTypes.swift`)
+- [x] `introspection/tag.rs` — `Tag`/`TagFlags`/`TagElem` (`Introspection/Tag.swift`)
+- [x] `introspection/locator.rs` — `Locator`/`LocatorLink`/`SplitLocator` with `next`/`next_inner`/`next_location`; measure-mode resolution deferred via `Engine.measureLocation` hook (`Introspection/Locator.swift`)
+- [x] Style-chain infra — `entries`/`links`/`recipes`/`suffix`/`trunk`/`chain`/`outside`/`pop`, identity `==`, `Styles.apply`/`applyOne`/`lazyItems` init, `NativeShowRule`/`NativeRuleMap` (`Foundations/Styles.swift`)
+- [x] Elements — `ParElem`, `ListElem`/`EnumElem`/`TermsElem` (+`ListLike`/`ListItemLike`), `CiteElem`/`CiteGroup`, `HElem`/`VElem`, `PageElem`, `PagebreakElem`, `AlignElem`, `BoxElem`, `InlineElem`/`InlineItem`, `DocumentElem`+`DocumentFormat`, capability protocols (`Synthesize`/`ShowSet`/`Mathy`/`Unlabellable` as `*Capable` Swift protocols) (`Model/RealizeElems.swift`)
+- [x] Engine wiring — `Routines.realize` default impl, `Engine.delay`, `Route.increase/decrease/checkShowDepth`, `measureLocation` hook
+- [ ] `DocumentInfo::populate`/`populate_locale` + `DocumentFormatOptions::populate` bodies (need full `DocumentElem`/`TextElem` fields)
+- [ ] `HtmlElem` whitespace-collapsing branch in space transitions (needs HTML export)
+- [ ] Native show rules registration for built-in elements (bibliography, outline, etc.)
+- [ ] Measure-mode location resolution via `engine.introspect` (introspection milestone)

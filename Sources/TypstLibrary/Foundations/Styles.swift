@@ -16,6 +16,11 @@ public struct Styles: Sendable, Hashable {
         items = styles.map { LazyHash($0) }
     }
 
+    /// Create from pre-hashed style entries.
+    init(lazyItems: [LazyHash<Style>]) {
+        items = lazyItems
+    }
+
     public var isEmpty: Bool { items.isEmpty }
 
     /// All entries.
@@ -605,9 +610,7 @@ extension StyleChain {
             items.append(contentsOf: link.reversed())
         }
         items.reverse()
-        var styles = Styles()
-        styles.items = items
-        return styles
+        return Styles(lazyItems: items)
     }
 
     /// Remove the last (innermost) link from the chain.
@@ -658,5 +661,60 @@ extension StyleChain: Equatable {
     /// the conservative direction for `trunk`/`suffix` computations.
     public static func == (a: StyleChain, b: StyleChain) -> Bool {
         a.headID == b.headID && a.tail === b.tail
+    }
+}
+
+// MARK: - Native show rules
+
+/// The show rule for a native element.
+///
+/// Port of `NativeShowRule` in `foundations/styles.rs`.
+public struct NativeShowRule: Sendable {
+    /// The element to which this rule applies.
+    public let elem: Element
+    /// Applies the rule to content. Must only be called with content of the
+    /// appropriate type.
+    public let apply: @Sendable (Content, inout Engine, StyleChain) -> SourceResult<Content>
+
+    public init(
+        _ f: @escaping @Sendable (Content, inout Engine, StyleChain) -> SourceResult<Content>,
+        elem: Element
+    ) {
+        self.elem = elem
+        self.apply = f
+    }
+}
+
+/// Holds native show rules.
+///
+/// Port of `NativeRuleMap` in `foundations/styles.rs`.
+public final class NativeRuleMap: @unchecked Sendable {
+    private var rules: [RuleKey: NativeShowRule] = [:]
+
+    private struct RuleKey: Hashable {
+        var elem: Element
+        var target: Target
+    }
+
+    public init() {}
+
+    /// Registers a rule for a target.
+    ///
+    /// Port of upstream `NativeRuleMap::register`.
+    public func register(
+        elem: Element,
+        target: Target,
+        _ f: @escaping @Sendable (Content, inout Engine, StyleChain) -> SourceResult<Content>
+    ) {
+        let rule = NativeShowRule(f, elem: elem)
+        rules[RuleKey(elem: elem, target: target)] = rule
+    }
+
+    /// Retrieves the rule that applies to the `content` on the current
+    /// `target`.
+    ///
+    /// Port of upstream `NativeRuleMap::get`.
+    public func get(target: Target, content: Content) -> NativeShowRule? {
+        rules[RuleKey(elem: content.elem, target: target)]
     }
 }
