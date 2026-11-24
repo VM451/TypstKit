@@ -461,3 +461,69 @@ public struct WorldTime: Sendable {
         if case let .system(clock) = inner { clock.reset() }
     }
 }
+
+// MARK: - TOML datetime sentinel
+
+extension Datetime {
+    /// Rebuild a datetime from a single-key dict carrying the TOML
+    /// serde sentinel `$__toml_private_datetime`. Port of upstream
+    /// `Datetime::from_toml_dict` — invoked by every map decode path
+    /// (toml, and transitively yaml/cbor when a crafted map appears).
+    public static func fromTomlDict(_ dict: Dict) -> Datetime? {
+        guard dict.count == 1,
+              case .str(let s)? = dict.get("$__toml_private_datetime")
+        else { return nil }
+        let text = s.value
+
+        // [year]-[month]-[day]T[hour]:[minute]:[second]Z — the `Z` is a
+        // literal in upstream's format_description (naive datetime).
+        if let d = parseISODateTime(text, utcSuffix: true) {
+            return fromYMDHMS(d.0, d.1, d.2, d.3, d.4, d.5)
+        }
+        if let d = parseISODateTime(text, utcSuffix: false) {
+            return fromYMDHMS(d.0, d.1, d.2, d.3, d.4, d.5)
+        }
+        if let d = parseISODate(text) {
+            return fromYMD(d.0, d.1, d.2)
+        }
+        if let t = parseISOTime(text) {
+            return fromHMS(t.0, t.1, t.2)
+        }
+        return nil
+    }
+
+    /// Strict `YYYY-MM-DDTHH:MM:SS` (+ optional literal `Z`).
+    static func parseISODateTime(_ s: String, utcSuffix: Bool) -> (Int, Int, Int, Int, Int, Int)? {
+        var t = s
+        if utcSuffix {
+            guard t.hasSuffix("Z") else { return nil }
+            t.removeLast()
+        } else if t.hasSuffix("Z") {
+            return nil
+        }
+        let parts = t.split(separator: "T", omittingEmptySubsequences: false)
+        guard parts.count == 2,
+              let ymd = parseISODate(String(parts[0])),
+              let hms = parseISOTime(String(parts[1]))
+        else { return nil }
+        return (ymd.0, ymd.1, ymd.2, hms.0, hms.1, hms.2)
+    }
+
+    /// Strict `YYYY-MM-DD`.
+    static func parseISODate(_ s: String) -> (Int, Int, Int)? {
+        let p = s.split(separator: "-", omittingEmptySubsequences: false)
+        guard p.count == 3, p[0].count == 4, p[1].count == 2, p[2].count == 2,
+              let y = Int(p[0]), let m = Int(p[1]), let d = Int(p[2])
+        else { return nil }
+        return (y, m, d)
+    }
+
+    /// Strict `HH:MM:SS`.
+    static func parseISOTime(_ s: String) -> (Int, Int, Int)? {
+        let p = s.split(separator: ":", omittingEmptySubsequences: false)
+        guard p.count == 3, p[0].count == 2, p[1].count == 2, p[2].count == 2,
+              let h = Int(p[0]), let m = Int(p[1]), let sec = Int(p[2])
+        else { return nil }
+        return (h, m, sec)
+    }
+}

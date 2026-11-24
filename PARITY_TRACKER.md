@@ -74,7 +74,7 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
       constructor, 9 direct-call tests green), ~~array~~, ~~dict~~,
       type, ~~assert~~, eval, ~~repr~~, ~~panic~~, ~~version~~,
       ~~bytes~~, ~~label~~, ~~regex~~ (constructor scope), json, yaml,
-      toml, csv, xml, cbor, plugin, ~~datetime~~, ~~duration~~, ~~float~~,
+      ~~toml~~, ~~csv~~, ~~xml~~, ~~cbor~~, ~~yaml~~, plugin, ~~datetime~~, ~~duration~~, ~~float~~,
       ~~int~~, ~~decimal~~, ~~type~~, ~~symbol~~ (constructor),
       bool, none, auto; content methods (func/has/at/
       fields/location); location value type (scope methods
@@ -118,7 +118,13 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
       encoder: sorted keys, .0 floats, repr fallback; csv is a minimal
       rust-csv-semantics parser); VirtualPath.normalize now errors on
       `..` escaping root (upstream PathError::Escapes — was silently
-      clamping); yaml/toml/cbor/xml pending parser ports
+      clamping); xml/cbor/toml/yaml ported (LoadingXML.swift roxmltree-
+      faithful parser; LoadingCBOR.swift RFC 8949 codec; LoadingTOML.swift
+      TOML 1.0 subset parser w/ $__toml_private_datetime sentinel +
+      reference-tree TomlTable; LoadingYAML.swift YAML 1.2 subset parser —
+      block/flow collections, block scalars, tags-ignored, i64-overflow→
+      float per upstream docs; all six formats have .encode scopes where
+      upstream does); 46 Loading tests green, 188 library tests total
 - [ ] model: document/page/par/text/table/grid/list/enum/terms/
       heading/figure/equation/outlines/notes/bibliography/cite/
       ref/footnote/state/counter/context/query/locate/metadata

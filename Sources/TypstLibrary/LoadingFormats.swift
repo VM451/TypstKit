@@ -510,7 +510,8 @@ func defineDataLoading(into global: Scope) {
     global.defineFunc(readFunc)
     global.defineFunc(csvFunc)
     global.defineFunc(jsonFunc)
-    // json.encode attaches to the `json` function's scope via typeInfo;
-    // the global `json` binding gets its scope through Func scope
-    // resolution — see FoundationsModule wiring.
+    global.defineFunc(xmlFunc)
+    global.defineFunc(cborFunc)
+    global.defineFunc(tomlFunc)
+    global.defineFunc(yamlFunc)
 }
