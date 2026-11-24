@@ -55,8 +55,8 @@ import TypstUtils
         // Valid field → selector value.
         let sel = try call(TypstLibrary.funcWhere, [textFunc],
                            named: [FuncHarness.named("text", s("hi"))])
-        guard case .selector = sel else {
-            Issue.record("expected selector, got \(sel.repr())"); return
+        guard case .dynamic(let d) = sel, d.is(TypstLibrary.Selector.self) else {
+            Issue.record("expected selector dynamic, got \(sel.repr())"); return
         }
         // Unknown field → element/field error.
         switch harness.call(TypstLibrary.funcWhere,

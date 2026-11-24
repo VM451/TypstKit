@@ -576,6 +576,15 @@ public struct Element: Sendable, Hashable {
         info.capabilities.contains(capability)
     }
 
+    /// Whether the element can be located/introspected.
+    /// Port of upstream `Element::is_locatable`.
+    public var isLocatable: Bool { can(.locatable) }
+
+    /// Whether the element is excluded from queries.
+    /// Upstream keeps a dedicated vtable flag; the port maps it to the
+    /// absence of the `queriable` capability.
+    public var isUnqueriable: Bool { !can(.queriable) }
+
     /// The selector matching all instances of this element.
     public func select() -> Selector { .elem(self, fields: nil) }
 

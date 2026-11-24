@@ -171,5 +171,7 @@ extension Regex: NativeType {
 
 extension Selector: NativeType {
     public static let typeInfo = TypeInfo(name: "selector", longName: "selector",
-        title: "Selector", since: .forever)
+        title: "Selector", since: .version([0, 3, 0]),
+        constructor: { Func(native: selectorConstruct) },
+        scope: { selectorScope() })
 }
