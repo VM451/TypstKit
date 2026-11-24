@@ -420,7 +420,7 @@ public struct HeadingElem: NativeElement {
             FieldInfo(id: 0, name: "level"),
             FieldInfo(id: 1, name: "depth"),
             FieldInfo(id: 2, name: "offset"),
-            FieldInfo(id: 3, name: "numbering"),
+            FieldInfo(id: 3, name: "numbering", settable: true),
             FieldInfo(id: 4, name: "numbers"),
             FieldInfo(id: 5, name: "supplement"),
             FieldInfo(id: 6, name: "outlined"),
@@ -442,7 +442,7 @@ public struct HeadingElem: NativeElement {
     public var offset: Int = 0
 
     /// The heading's numbering.
-    public var numbering: Value? = nil
+    public var numbering: Numbering? = nil
 
     /// The numbers of the heading (internal).
     public var numbers: Str = Str("")
@@ -483,7 +483,7 @@ public struct HeadingElem: NativeElement {
         case 0: return level.isAuto ? .auto : .int(Int64(level.custom() ?? 1))
         case 1: return .int(Int64(depth))
         case 2: return .int(Int64(offset))
-        case 3: return numbering ?? .none
+        case 3: return numbering?.intoValue() ?? .none
         case 4: return .str(numbers)
         case 5:
             switch supplement.value {
@@ -510,6 +510,8 @@ public struct HeadingElem: NativeElement {
         switch (id, value) {
         case (1, let .int(d)): depth = Int(d)
         case (2, let .int(o)): offset = Int(o)
+        case (3, .none): numbering = nil
+        case (3, let v): numbering = try Numbering.fromValue(v).get()
         case (6, let .bool(b)): outlined = b
         case (9, let .content(c)): body = c
         default: break

@@ -623,12 +623,17 @@ public struct EnumElem: NativeElement, ListLike {
             FieldInfo(id: 6, name: "spacing", settable: true),
             FieldInfo(id: 7, name: "number-align", settable: true),
             FieldInfo(id: 8, name: "children", required: true),
+            FieldInfo(id: 9, name: "numbering", settable: true),
         ],
         capabilities: [.locatable, .tagged]
     )
 
     /// Whether the list is tight.
     public var tight: Bool = true
+
+    /// The numbering pattern or function.
+    public var numbering: Numbering =
+        .pattern(NumberingPattern(pieces: [("", .arabic)], suffix: "."))
 
     /// The start number.
     public var start: Smart<UInt64> = .auto
@@ -687,6 +692,7 @@ public struct EnumElem: NativeElement, ListLike {
             }
         case 8:
             return .array(ArrayValue(children.map { .content(Content($0)) }))
+        case 9: return numbering.intoValue()
         default: return nil
         }
     }
@@ -708,6 +714,7 @@ public struct EnumElem: NativeElement, ListLike {
                 }
                 return nil
             }
+        case (9, let v): numbering = try Numbering.fromValue(v).get()
         default: break
         }
     }

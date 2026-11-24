@@ -359,6 +359,7 @@ extension EnumElem {
         elem.bodyIndent = try args.namedT("body-indent") ?? elem.bodyIndent
         elem.spacing = try args.namedT("spacing") ?? elem.spacing
         elem.numberAlign = try args.namedT("number-align") ?? elem.numberAlign
+        elem.numbering = try args.namedT("numbering") ?? elem.numbering
         elem.span = args.span
         try args.finishT()
         return Content(elem)
@@ -844,6 +845,7 @@ func defineModelElements(into global: Scope) {
     defineElement(into: global, SmallcapsElem.self)
     defineElement(into: global, DividerElem.self)
     defineElement(into: global, QuoteElem.self)
+    global.defineFunc(numberingFunc)
 }
 
 /// Port of upstream `layout/mod.rs` element registration for the elements
