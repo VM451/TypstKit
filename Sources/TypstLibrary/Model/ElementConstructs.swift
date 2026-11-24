@@ -784,6 +784,33 @@ extension TableCell {
     }
 }
 
+extension FootnoteElem {
+    public static func construct(engine: inout Engine, args: inout Args) throws -> Content {
+        var elem = FootnoteElem(body: try args.expectT("body"))
+        elem.numbering = try args.namedT("numbering") ?? elem.numbering
+        elem.span = args.span
+        try args.finishT()
+        return Content(elem)
+    }
+}
+
+extension FootnoteEntry {
+    public static func construct(engine: inout Engine, args: inout Args) throws -> Content {
+        let note: Content = try args.expectT("note")
+        guard note.packed(FootnoteElem.self) != nil else {
+            throw HintedString("expected footnote, found \(note.name)")
+        }
+        var elem = FootnoteEntry(note: note)
+        elem.separator = try args.namedT("separator") ?? elem.separator
+        elem.clearance = try args.namedT("clearance") ?? elem.clearance
+        elem.gap = try args.namedT("gap") ?? elem.gap
+        elem.indent = try args.namedT("indent") ?? elem.indent
+        elem.span = args.span
+        try args.finishT()
+        return Content(elem)
+    }
+}
+
 // MARK: - Element scopes & registration
 
 extension ListElem {
@@ -807,6 +834,15 @@ extension TermsElem {
     static var itemScope: Scope {
         let scope = Scope()
         scope.define("item", .function(Func(element: Element(TermItem.self))))
+        return scope
+    }
+}
+
+extension FootnoteElem {
+    /// Upstream `#[scope] impl FootnoteElem { #[elem] type FootnoteEntry; }`.
+    static var entryScope: Scope {
+        let scope = Scope()
+        scope.define("entry", .function(Func(element: Element(FootnoteEntry.self))))
         return scope
     }
 }
@@ -845,6 +881,7 @@ func defineModelElements(into global: Scope) {
     defineElement(into: global, SmallcapsElem.self)
     defineElement(into: global, DividerElem.self)
     defineElement(into: global, QuoteElem.self)
+    defineElement(into: global, FootnoteElem.self)
     global.defineFunc(numberingFunc)
 }
 

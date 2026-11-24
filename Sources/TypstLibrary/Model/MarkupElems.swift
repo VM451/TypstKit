@@ -636,3 +636,112 @@ public struct TermItem: NativeElement {
         }
     }
 }
+
+// MARK: - Internal link elements
+
+/// A temporary dispatch element for raw links that bypass `LinkElem` in
+/// paged export and route to `LinkElem` in HTML. Port of `DirectLinkElem`
+/// in `model/link.rs`. Construct-only internally; manual construction
+/// bails upstream-faithfully.
+public struct DirectLinkElem: NativeElement {
+    public static let info = ElementInfo(
+        name: "direct-link",
+        title: "Direct Link",
+        fields: [
+            FieldInfo(id: 0, name: "loc", required: true),
+            FieldInfo(id: 1, name: "body", required: true),
+            FieldInfo(id: 2, name: "alt", required: true),
+        ],
+        capabilities: []
+    )
+
+    /// The link target location.
+    public var loc: Location
+    /// The linked content.
+    public var body: Content
+    /// Alternative text for accessibility.
+    public var alt: Str?
+
+    public var span: Span = .detached
+
+    public init(loc: Location, body: Content, alt: Str? = nil) {
+        self.loc = loc
+        self.body = body
+        self.alt = alt
+    }
+
+    /// Pack into content.
+    public func pack() -> Content { Content(self) }
+
+    public func field(_ id: UInt8) -> Value? {
+        switch id {
+        case 0: return nil // Location has no Value representation
+        case 1: return .content(body)
+        case 2: return alt.map { .str($0) }
+        default: return nil
+        }
+    }
+
+    public mutating func setField(_ id: UInt8, _ value: Value) throws {
+        switch (id, value) {
+        case (1, let .content(c)): body = c
+        case (2, let .str(s)): alt = s
+        case (2, .none): alt = nil
+        default: break
+        }
+    }
+
+    public static func construct(engine: inout Engine, args: inout Args) throws -> Content {
+        throw HintedString("cannot be constructed manually")
+    }
+}
+
+/// Wraps all content that is linked to a destination. Port of
+/// `LinkMarker` in `model/link.rs`. Construct-only internally.
+public struct LinkMarker: NativeElement {
+    public static let info = ElementInfo(
+        name: "link-marker",
+        title: "Link Marker",
+        fields: [
+            FieldInfo(id: 0, name: "body", required: true),
+            FieldInfo(id: 1, name: "alt", required: true),
+        ],
+        capabilities: [.tagged]
+    )
+
+    /// The content.
+    public var body: Content
+    /// Alternative text for accessibility.
+    public var alt: Str?
+
+    public var span: Span = .detached
+
+    public init(body: Content, alt: Str? = nil) {
+        self.body = body
+        self.alt = alt
+    }
+
+    /// Pack into content.
+    public func pack() -> Content { Content(self) }
+
+    public func field(_ id: UInt8) -> Value? {
+        switch id {
+        case 0: return .content(body)
+        case 1: return alt.map { .str($0) }
+        default: return nil
+        }
+    }
+
+    public mutating func setField(_ id: UInt8, _ value: Value) throws {
+        switch (id, value) {
+        case (0, let .content(c)): body = c
+        case (1, let .str(s)): alt = s
+        case (1, .none): alt = nil
+        default: break
+        }
+    }
+
+    public static func construct(engine: inout Engine, args: inout Args) throws -> Content {
+        throw HintedString("cannot be constructed manually")
+    }
+}
