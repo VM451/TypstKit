@@ -49,7 +49,8 @@ extension Location: Repr {
 
 extension Location: NativeType {
     public static let typeInfo = TypeInfo(name: "location", longName: "location",
-        title: "Location", since: .forever)
+        title: "Location", since: .forever,
+        scope: { locationScope() })
 }
 
 /// Locations are `#[ty]` values stored as `Value.dynamic`.

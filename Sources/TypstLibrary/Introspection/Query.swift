@@ -290,6 +290,7 @@ extension MetadataElem {
 func defineIntrospection(into global: Scope) {
     global.defineType(Location.self)
     global.defineType(State.self)
+    global.defineType(Counter.self)
     global.defineFunc(queryFunc)
     global.defineFunc(locateFunc)
     global.defineFunc(hereFunc)
