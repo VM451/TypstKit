@@ -93,7 +93,7 @@ public struct RectElem: NativeElement {
         switch id {
         case 0: return width.intoValue()
         case 1: return height.intoValue()
-        case 2: return fill?.intoValue() ?? Value.none
+        case 2: return fill?.intoValue()
         case 3: return stroke.intoValue()
         case 4: return radius.intoValue()
         case 5: return inset.intoValue()
@@ -202,7 +202,7 @@ public struct SquareElem: NativeElement {
         switch id {
         case 0: return width.intoValue()
         case 1: return height.intoValue()
-        case 2: return fill?.intoValue() ?? Value.none
+        case 2: return fill?.intoValue()
         case 3: return stroke.intoValue()
         case 4: return radius.intoValue()
         case 5: return inset.intoValue()
@@ -307,7 +307,7 @@ public struct EllipseElem: NativeElement {
         switch id {
         case 0: return width.intoValue()
         case 1: return height.intoValue()
-        case 2: return fill?.intoValue() ?? Value.none
+        case 2: return fill?.intoValue()
         case 3: return stroke.intoValue()
         case 4: return inset.intoValue()
         case 5: return outset.intoValue()
@@ -407,7 +407,7 @@ public struct CircleElem: NativeElement {
         switch id {
         case 0: return width.intoValue()
         case 1: return height.intoValue()
-        case 2: return fill?.intoValue() ?? Value.none
+        case 2: return fill?.intoValue()
         case 3: return stroke.intoValue()
         case 4: return inset.intoValue()
         case 5: return outset.intoValue()
@@ -581,7 +581,7 @@ public struct PolygonElem: NativeElement {
 
     public func field(_ id: UInt8) -> Value? {
         switch id {
-        case 0: return fill?.intoValue() ?? Value.none
+        case 0: return fill?.intoValue()
         case 1: return fillRule.intoValue()
         case 2: return stroke.intoValue()
         case 3: return .array(ArrayValue(items: vertices.map { $0.intoValue() }))

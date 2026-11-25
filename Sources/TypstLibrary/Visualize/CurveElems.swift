@@ -126,7 +126,7 @@ public struct CurveElem: NativeElement {
 
     public func field(_ id: UInt8) -> Value? {
         switch id {
-        case 0: return fill?.intoValue() ?? Value.none
+        case 0: return fill?.intoValue()
         case 1: return fillRule.intoValue()
         case 2: return stroke.intoValue()
         case 3: return .array(ArrayValue(items: components.map { $0.intoValue() }))

@@ -564,7 +564,7 @@ public struct OutlineEntry: NativeElement {
         switch id {
         case 0: return level.intoValue()
         case 1: return element.intoValue()
-        case 2: return fill?.intoValue() ?? Value.none
+        case 2: return fill?.intoValue()
         case 3: return parent?.intoValue() ?? Value.none
         default: return nil
         }

@@ -274,7 +274,7 @@ public struct BoxElem: NativeElement {
         case 0: return width.intoValue()
         case 1: return height.intoValue()
         case 2: return baseline.intoValue()
-        case 3: return fill?.intoValue() ?? Value.none
+        case 3: return fill?.intoValue()
         case 4: return stroke.intoValue()
         case 5: return radius.intoValue()
         case 6: return inset.intoValue()
@@ -421,7 +421,7 @@ public struct BlockElem: NativeElement {
         case 0: return width.intoValue()
         case 1: return height.intoValue()
         case 2: return .bool(breakable)
-        case 3: return fill?.intoValue() ?? Value.none
+        case 3: return fill?.intoValue()
         case 4: return stroke.intoValue()
         case 5: return radius.intoValue()
         case 6: return inset.intoValue()
