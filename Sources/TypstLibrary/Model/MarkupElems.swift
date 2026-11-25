@@ -67,6 +67,26 @@ public enum Supplement: Sendable, Hashable {
     case function(Func)
 }
 
+extension Supplement {
+    /// Tries to resolve the supplement into its content.
+    /// Port of `Supplement::resolve` in `model/reference.rs`.
+    public func resolve(
+        engine: inout Engine, styles: StyleChain, args: [Value]
+    ) -> SourceResult<Content> {
+        switch self {
+        case let .content(content):
+            return .success(content)
+        case let .function(`func`):
+            let context = Context(location: nil, styles: styles)
+            return `func`.callValue(
+                engine: &engine, context: context,
+                args: Args(span: .detached, values: args),
+                span: `func`.span
+            ).map { $0.display }
+        }
+    }
+}
+
 /// The bare-text body for a URL link. Port of `body_from_url`.
 func bodyFromUrl(_ url: Url) -> Content {
     if let (_, rest) = url.stripContactScheme() {

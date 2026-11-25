@@ -16,7 +16,12 @@ import TypstUtils
 /// Port of upstream `Synthesize` capability trait.
 public protocol SynthesizeCapable: NativeElement {
     /// Prepare the element for show rule application.
-    mutating func synthesize(engine: inout Engine, styles: StyleChain) throws
+    ///
+    /// Upstream synthesizes on `Packed<T>` which carries the content's
+    /// location; the port's element structs don't, so the location is
+    /// passed in from the wrapping content.
+    mutating func synthesize(engine: inout Engine, styles: StyleChain,
+                             location: Location?) throws
 }
 
 /// Defines built-in show set rules for an element.

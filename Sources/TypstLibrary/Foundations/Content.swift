@@ -272,6 +272,28 @@ public struct Content: Sendable {
         return seq.children.isEmpty
     }
 
+    /// Naive depth-first search for the first content matching a predicate,
+    /// descending into sequences and styled content. Port of the traversal
+    /// backing `Content::query_first_naive` (upstream takes a selector;
+    /// the port's narrow use is figure-kind detection, so a predicate
+    /// suffices).
+    public func queryFirstNaive(
+        _ matches: (Content) -> Bool
+    ) -> Content? {
+        if matches(self) { return self }
+        if let children = sequenceChildren {
+            for child in children {
+                if let found = child.queryFirstNaive(matches) {
+                    return found
+                }
+            }
+        }
+        if let styled = packed.element as? StyledElem {
+            return styled.child.queryFirstNaive(matches)
+        }
+        return nil
+    }
+
     /// Concatenate content.
     public static func + (lhs: Content, rhs: Content) -> Content {
         var lhs = lhs
@@ -357,7 +379,8 @@ extension Content {
                                            styles: StyleChain) throws {
         try packed.mutateAny { element in
             guard var synth = element as? any SynthesizeCapable else { return }
-            try synth.synthesize(engine: &engine, styles: styles)
+            try synth.synthesize(engine: &engine, styles: styles,
+                                 location: location)
             element = synth as any NativeElement
         }
     }
