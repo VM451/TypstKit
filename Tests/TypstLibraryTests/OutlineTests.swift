@@ -120,9 +120,17 @@ struct OutlineTests {
             return
         }
         #expect(entry.level.value == 2)
-        // Default fill is the dotted repeat.
-        #expect(entry.fill != nil)
+        // Fill starts unset and resolves to the dotted-repeat field default.
+        #expect(entry.fillIsSet == false)
+        #expect(entry.resolvedFill(StyleChain()) != nil)
         #expect(entry.parent == nil)
+    }
+
+    @Test func entryExplicitNoneFillIsReadable() throws {
+        let content = try markup("#outline.entry(2, [x], fill: none)")
+        let entry = try #require(firstElem(content)?.element as? OutlineEntry)
+        #expect(entry.fillIsSet)
+        #expect(try entry.pack().getByName("fill").get() == .none)
     }
 
     // MARK: - Casts

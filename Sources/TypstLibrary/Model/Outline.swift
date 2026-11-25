@@ -456,11 +456,23 @@ public struct OutlineEntry: NativeElement {
     public var element: Content
 
     /// Content to fill the space between the title and the page number.
-    public var fill: Content? =
+    /// `nil` with `fillIsSet == false` means unset; the style-chain/default
+    /// dotted repeat applies. Assigning any value, including `nil`, marks the
+    /// field set and makes explicit `fill: none` observable.
+    public var fill: Content? = nil {
+        didSet { fillIsSet = true }
+    }
+
+    /// Whether `fill` was explicitly set.
+    public private(set) var fillIsSet = false
+
+    /// Upstream's field default: dotted repeat fill.
+    public static var defaultFill: Content {
         Content(RepeatElem(
             body: TextElem.packed("."),
             gap: Length(Em(0.15))
         ))
+    }
 
     /// Lets outline entries access the outline they are part of. Upstream
     /// stores `Packed<OutlineElem>`; the port stores it as content —
@@ -551,20 +563,24 @@ public struct OutlineEntry: NativeElement {
         return .success(Content.sequence(seq))
     }
 
-    /// `self.fill.get_cloned(styles)` — chain value wins over own.
+    /// `self.fill.get_cloned(styles)`: an explicitly set field wins;
+    /// otherwise use the style chain, falling back to the field default.
     func resolvedFill(_ styles: StyleChain) -> Content? {
+        if fillIsSet { return fill }
         if let v = styles.get(Element(OutlineEntry.self), 2),
            case let .success(f) = Optional<Content>.fromValue(v) {
             return f
         }
-        return fill
+        return Self.defaultFill
     }
 
     public func field(_ id: UInt8) -> Value? {
         switch id {
         case 0: return level.intoValue()
         case 1: return element.intoValue()
-        case 2: return fill?.intoValue()
+        case 2:
+            guard fillIsSet else { return nil }
+            return fill?.intoValue() ?? Value.none
         case 3: return parent?.intoValue() ?? Value.none
         default: return nil
         }
