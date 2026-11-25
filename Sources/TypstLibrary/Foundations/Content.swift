@@ -265,6 +265,13 @@ public struct Content: Sendable {
         (packed.element as? SequenceElem)?.children
     }
 
+    /// Whether the content is an empty sequence.
+    /// Port of `Content::is_empty`.
+    public var isEmpty: Bool {
+        guard let seq = packed.element as? SequenceElem else { return false }
+        return seq.children.isEmpty
+    }
+
     /// Concatenate content.
     public static func + (lhs: Content, rhs: Content) -> Content {
         var lhs = lhs
@@ -793,6 +800,7 @@ public struct TextElem: NativeElement {
             FieldInfo(id: 2, name: "region", settable: true),
             FieldInfo(id: 3, name: "size", settable: true),
             FieldInfo(id: 4, name: "weight", settable: true),
+            FieldInfo(id: 5, name: "dir", settable: true),
         ],
         capabilities: [.locatable, .labelled, .counted, .queriable, .tagged]
     )
@@ -802,6 +810,9 @@ public struct TextElem: NativeElement {
 
     /// Field id of the `weight` field (upstream `TextElem::weight`).
     public static let weightFieldID: UInt8 = 4
+
+    /// Field id of the `dir` field (upstream `TextElem::dir`).
+    public static let dirFieldID: UInt8 = 5
 
     /// The text.
     public var text: Str
@@ -826,6 +837,10 @@ public struct TextElem: NativeElement {
     /// other ghost fields).
     public var weight: FontWeight = .regular
 
+    /// The direction of text and inline objects in their line
+    /// (`#[ghost]` upstream — stored like the port's other ghost fields).
+    public var dir: TextDir = TextDir(.auto)
+
     public var span: Span = .detached
 
     public init(_ text: Str) { self.text = text }
@@ -846,6 +861,7 @@ public struct TextElem: NativeElement {
             return .auto
         case 3: return .length(size.inner)
         case 4: return weight.intoValue()
+        case 5: return dir.intoValue()
         default: return nil
         }
     }
@@ -862,7 +878,56 @@ public struct TextElem: NativeElement {
             else { break }
             size = ts
         case (4, let v): weight = try FontWeight.fromValue(v).get()
+        case (5, let v): dir = try TextDir.fromValue(v).get()
         default: break
+        }
+    }
+
+    /// Resolve the text direction through the style chain
+    /// (`styles.resolve(TextElem::dir)` upstream).
+    public static func dirValue(_ styles: StyleChain) -> Dir {
+        let chainDir = styles.get(Element(TextElem.self), dirFieldID)
+            .flatMap { try? TextDir.fromValue($0).get() }
+        return (chainDir ?? TextDir(.auto)).resolve(styles)
+    }
+}
+
+/// The direction of text and inline objects in their line.
+/// Port of `TextDir` in `text/mod.rs`.
+public struct TextDir: Sendable, Hashable {
+    /// The wrapped smart direction.
+    public var dir: Smart<Dir>
+
+    public init(_ dir: Smart<Dir>) { self.dir = dir }
+
+    /// Resolve the direction through the style chain (`Resolve for TextDir`).
+    /// The `auto` fallback is language-dependent upstream (`Lang::dir`);
+    /// until `Lang` lands, auto resolves to left-to-right — correct for
+    /// the English default.
+    public func resolve(_ styles: StyleChain) -> Dir {
+        switch dir {
+        case .auto: return .ltr
+        case let .custom(d): return d
+        }
+    }
+}
+
+extension TextDir: Castable, IntoValue, FromValue {
+    public static var input: CastInfo { Smart<Dir>.input }
+    public static var output: CastInfo { Smart<Dir>.output }
+    public static func castable(_ value: Value) -> Bool {
+        Smart<Dir>.castable(value)
+    }
+    public func intoValue() -> Value { dir.intoValue() }
+    public static func fromValue(_ value: Value) -> HintedStrResult<Self> {
+        let smart = Smart<Dir>.fromValue(value)
+        switch smart {
+        case let .success(v):
+            if v.isCustomAnd({ $0.axis == .y }) {
+                return .failure(HintedString("text direction must be horizontal"))
+            }
+            return .success(TextDir(v))
+        case let .failure(e): return .failure(e)
         }
     }
 }

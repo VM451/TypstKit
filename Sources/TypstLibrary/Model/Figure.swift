@@ -2,10 +2,11 @@ import TypstSyntax
 
 /// A figure with an optional caption.
 ///
-/// Port of `FigureElem` in `model/figure.rs`. The `Synthesize`, `Count`,
-/// `Refable`, and `Outlinable` capability bodies are deferred with the
-/// introspection milestone (`Counter`, `Locale`, `query_first_naive`), as
-/// are the synthesized `counter`/`locale` fields.
+/// Port of `FigureElem` in `model/figure.rs`. `Refable`/`Outlinable`/
+/// `LocalName` live in `Model/Outline.swift` and `Count` in
+/// `Introspection/Counter.swift`. `Synthesize` is deferred with the
+/// realization milestone (`Locale`, `query_first_naive`), as is the
+/// synthesized `locale` field.
 public struct FigureElem: NativeElement {
     public static let info = ElementInfo(
         name: "figure",
@@ -22,6 +23,7 @@ public struct FigureElem: NativeElement {
             FieldInfo(id: 7, name: "numbering", settable: true),
             FieldInfo(id: 8, name: "gap", settable: true),
             FieldInfo(id: 9, name: "outlined", settable: true),
+            FieldInfo(id: 10, name: "counter"),
         ],
         capabilities: [.locatable, .tagged, .counted]
     )
@@ -57,6 +59,10 @@ public struct FigureElem: NativeElement {
 
     /// Whether the figure should appear in an outline of figures.
     public var outlined: Bool = true
+
+    /// Convenience field to get access to the counter for this figure
+    /// (`#[synthesized]` upstream — populated once synthesis lands).
+    public var counter: Counter? = nil
 
     public var span: Span = .detached
 
@@ -101,6 +107,7 @@ public struct FigureElem: NativeElement {
         case 7: return numbering?.intoValue() ?? .none
         case 8: return .length(gap)
         case 9: return .bool(outlined)
+        case 10: return counter?.intoValue() ?? .none
         default: return nil
         }
     }
@@ -205,6 +212,7 @@ public struct FigureCaption: NativeElement {
             FieldInfo(id: 4, name: "supplement"),
             FieldInfo(id: 5, name: "numbering"),
             FieldInfo(id: 6, name: "figure-location"),
+            FieldInfo(id: 7, name: "counter"),
         ],
         capabilities: [.locatable, .tagged]
     )
@@ -229,6 +237,9 @@ public struct FigureCaption: NativeElement {
 
     /// The figure's location (synthesized, internal upstream).
     public var figureLocation: Location? = nil
+
+    /// The figure's counter (synthesized upstream).
+    public var counter: Counter? = nil
 
     public var span: Span = .detached
 
@@ -256,6 +267,7 @@ public struct FigureCaption: NativeElement {
         case 4: return supplement.map { .content($0) } ?? .none
         case 5: return numbering?.intoValue() ?? .none
         case 6: return .none // Location has no Value representation
+        case 7: return counter?.intoValue() ?? .none
         default: return nil
         }
     }

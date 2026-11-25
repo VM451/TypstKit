@@ -944,6 +944,7 @@ func defineModelElements(into global: Scope) {
     defineElement(into: global, AssetElem.self)
     defineElement(into: global, FigureElem.self)
     defineElement(into: global, TitleElem.self)
+    defineElement(into: global, OutlineElem.self)
     global.defineFunc(numberingFunc)
 }
 
