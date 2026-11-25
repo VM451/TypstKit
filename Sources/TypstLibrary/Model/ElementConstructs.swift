@@ -834,6 +834,16 @@ extension FigureCaption {
     }
 }
 
+extension TitleElem {
+    public static func construct(engine: inout Engine, args: inout Args) throws -> Content {
+        var elem = TitleElem()
+        elem.body = try args.findT() ?? .auto
+        elem.span = args.span
+        try args.finishT()
+        return Content(elem)
+    }
+}
+
 extension FootnoteEntry {
     public static func construct(engine: inout Engine, args: inout Args) throws -> Content {
         let note: Content = try args.expectT("note")
@@ -933,6 +943,7 @@ func defineModelElements(into global: Scope) {
     defineElement(into: global, FootnoteElem.self)
     defineElement(into: global, AssetElem.self)
     defineElement(into: global, FigureElem.self)
+    defineElement(into: global, TitleElem.self)
     global.defineFunc(numberingFunc)
 }
 

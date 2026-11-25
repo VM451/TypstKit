@@ -817,3 +817,72 @@ extension Element: Castable, IntoValue, FromValue {
         return .success(element)
     }
 }
+
+extension FontWeight: Castable, IntoValue, FromValue {
+    /// Named weights cast to strings; other values to integers.
+    /// Port of the `cast!` impl in `text/font/variant.rs`.
+    public static var input: CastInfo {
+        .union([
+            .value(.str(Str("thin")), doc: "Thin weight (100)"),
+            .value(.str(Str("extralight")), doc: "Extra light weight (200)"),
+            .value(.str(Str("light")), doc: "Light weight (300)"),
+            .value(.str(Str("regular")), doc: "Regular weight (400)"),
+            .value(.str(Str("medium")), doc: "Medium weight (500)"),
+            .value(.str(Str("semibold")), doc: "Semibold weight (600)"),
+            .value(.str(Str("bold")), doc: "Bold weight (700)"),
+            .value(.str(Str("extrabold")), doc: "Extrabold weight (800)"),
+            .value(.str(Str("black")), doc: "Black weight (900)"),
+            .type(Type.of(Int64.self)),
+        ])
+    }
+    public static var output: CastInfo { input }
+
+    public static func castable(_ value: Value) -> Bool {
+        switch value {
+        case .int: return true
+        case let .str(s):
+            return ["thin", "extralight", "light", "regular", "medium",
+                    "semibold", "bold", "extrabold", "black"].contains(s.value)
+        default: return false
+        }
+    }
+
+    public func intoValue() -> Value {
+        switch value {
+        case 100: return .str(Str("thin"))
+        case 200: return .str(Str("extralight"))
+        case 300: return .str(Str("light"))
+        case 400: return .str(Str("regular"))
+        case 500: return .str(Str("medium"))
+        case 600: return .str(Str("semibold"))
+        case 700: return .str(Str("bold"))
+        case 800: return .str(Str("extrabold"))
+        case 900: return .str(Str("black"))
+        default: return .int(Int64(value))
+        }
+    }
+
+    public static func fromValue(_ value: Value) -> HintedStrResult<Self> {
+        switch value {
+        case let .int(n):
+            // Upstream clamps to u16 range first, then to 100...900.
+            let clamped = Swift.max(0, Swift.min(Int(UInt16.max), Int(n)))
+            return .success(FontWeight.fromNumber(clamped))
+        case let .str(s):
+            switch s.value {
+            case "thin": return .success(.thin)
+            case "extralight": return .success(.extralight)
+            case "light": return .success(.light)
+            case "regular": return .success(.regular)
+            case "medium": return .success(.medium)
+            case "semibold": return .success(.semibold)
+            case "bold": return .success(.bold)
+            case "extrabold": return .success(.extrabold)
+            case "black": return .success(.black)
+            default: return .failure(error(value))
+            }
+        default:
+            return .failure(error(value))
+        }
+    }
+}

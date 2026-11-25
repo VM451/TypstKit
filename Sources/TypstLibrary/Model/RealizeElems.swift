@@ -927,7 +927,7 @@ public struct DocumentElem: NativeElement {
         name: "document",
         title: "Document",
         fields: [
-            FieldInfo(id: 0, name: "title"),
+            FieldInfo(id: 0, name: "title", settable: true),
             FieldInfo(id: 1, name: "author"),
             FieldInfo(id: 2, name: "description"),
             FieldInfo(id: 3, name: "keywords"),

@@ -789,12 +789,16 @@ public struct TextElem: NativeElement {
             FieldInfo(id: 1, name: "lang", settable: true),
             FieldInfo(id: 2, name: "region", settable: true),
             FieldInfo(id: 3, name: "size", settable: true),
+            FieldInfo(id: 4, name: "weight", settable: true),
         ],
         capabilities: [.locatable, .labelled, .counted, .queriable, .tagged]
     )
 
     /// Field id of the `size` field (upstream `TextElem::size`).
     public static let sizeFieldID: UInt8 = 3
+
+    /// Field id of the `weight` field (upstream `TextElem::weight`).
+    public static let weightFieldID: UInt8 = 4
 
     /// The text.
     public var text: Str
@@ -813,6 +817,11 @@ public struct TextElem: NativeElement {
     /// The text size (upstream `TextSize`, default 11pt, folded across set
     /// rules by multiplication of the linear functions).
     public var size: TextSize = .default
+
+    /// The desired thickness of the font's glyphs (upstream `FontWeight`,
+    /// default regular; `#[ghost]` upstream — stored here like the port's
+    /// other ghost fields).
+    public var weight: FontWeight = .regular
 
     public var span: Span = .detached
 
@@ -833,6 +842,7 @@ public struct TextElem: NativeElement {
             if case let .custom(r) = region { return .str(r) }
             return .auto
         case 3: return .length(size.inner)
+        case 4: return weight.intoValue()
         default: return nil
         }
     }
@@ -848,6 +858,7 @@ public struct TextElem: NativeElement {
             guard case .success(let ts) = TextSize.fromValue(.length(l))
             else { break }
             size = ts
+        case (4, let v): weight = try FontWeight.fromValue(v).get()
         default: break
         }
     }

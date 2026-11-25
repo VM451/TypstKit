@@ -377,13 +377,55 @@ public enum FontStyle: String, Sendable, Hashable, CaseIterable {
 }
 
 /// Font weight 100-900.
+///
+/// Port of `FontWeight` in `text/font/variant.rs`.
 public struct FontWeight: Sendable, Hashable, Comparable {
+    /// The weight value between 100 and 900 (upstream tuple field `.0`).
     public var value: Int
     public init(_ value: Int) { self.value = value }
+
+    /// Thin weight (100).
     public static let thin = FontWeight(100)
+    /// Extra light weight (200).
+    public static let extralight = FontWeight(200)
+    /// Light weight (300).
+    public static let light = FontWeight(300)
+    /// Regular weight (400).
     public static let regular = FontWeight(400)
+    /// Medium weight (500).
+    public static let medium = FontWeight(500)
+    /// Semibold weight (600).
+    public static let semibold = FontWeight(600)
+    /// Bold weight (700).
     public static let bold = FontWeight(700)
+    /// Extrabold weight (800).
+    public static let extrabold = FontWeight(800)
+    /// Black weight (900).
+    public static let black = FontWeight(900)
+
+    /// Create from a number, clamping to 100...900 (upstream `from_number`).
+    public static func fromNumber(_ weight: Int) -> FontWeight {
+        FontWeight(Swift.max(100, Swift.min(900, weight)))
+    }
+
+    /// The number between 100 and 900.
+    public var number: Int { value }
+
+    /// Add (or remove) weight, saturating at 100 and 900 (upstream `thicken`).
+    public func thicken(_ delta: Int) -> FontWeight {
+        FontWeight.fromNumber(value + delta)
+    }
+
+    /// The absolute number distance to another weight (upstream `distance`).
+    public func distance(_ other: FontWeight) -> Int {
+        abs(value - other.value)
+    }
+
     public static func < (a: FontWeight, b: FontWeight) -> Bool { a.value < b.value }
+}
+
+extension FontWeight: Default {
+    public static var `default`: FontWeight { .regular }
 }
 
 /// Font stretch percentage.
