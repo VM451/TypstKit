@@ -244,12 +244,13 @@ targets: [
     .target(name: "MyApp", dependencies: [
         .product(name: "TypstKit", package: "TypstKit"),             // compiler port
         .product(name: "TypstUniverseKit", package: "TypstKit"),     // registry + SwiftUI browser
+        // Headless alternative: TypstUniverseCore and/or TypstUniverseStorage.
         .product(name: "AnyTyp", package: "TypstKit"),               // document → .typ
     ])
 ]
 ```
 
-Only pay for what you use — each product is an independent library; `TypstUniverseKit` further splits into `TypstUniverseCore` → `TypstUniverseStorage` → `TypstUniverseUI` targets.
+Only pay for what you use — each product is an independent library; `TypstUniverseCore` and `TypstUniverseStorage` are exported separately for headless hosts, while `TypstUniverseKit` bundles them with the SwiftUI browser.
 
 ### Xcode
 

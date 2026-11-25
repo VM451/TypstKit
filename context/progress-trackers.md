@@ -12,3 +12,9 @@
 - Done: Added `scaffoldTemplateInMemory` returning scaffolded files plus the manifest-declared template entrypoint; kept files-only `scaffoldInMemory` as a compatibility wrapper.
 - Why: Host apps could otherwise guess the wrong first `.typ` file when templates expose multiple starters (for example resume plus cover letter).
 - Verification: targeted `scaffoldTemplateInMemoryReportsManifestEntrypoint` regression passes; full `swift test` passes (including 539 core tests in 43 suites plus storage/UI/conversion lanes).
+
+## 2026-11-25 - Headless universe products exported
+
+- Done: Exported `TypstUniverseCore` and `TypstUniverseStorage` as standalone SwiftPM products while keeping umbrella `TypstUniverseKit`.
+- Why: Headless hosts documented as Core+Storage consumers could not resolve those products after the repository consolidation into TypstKit.
+- Verification: `swift package describe` exports both products; `swift build --target TypstUniverseStorage` passes in 45.64s. Prior full `swift test` passes on the scaffolder/API change.

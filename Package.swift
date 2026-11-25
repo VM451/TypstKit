@@ -13,6 +13,8 @@ let package = Package(
             name: "TypstKit",
             targets: ["TypstUtils", "TypstSyntax", "TypstLibrary"]
         ),
+        .library(name: "TypstUniverseCore", targets: ["TypstUniverseCore"]),
+        .library(name: "TypstUniverseStorage", targets: ["TypstUniverseStorage"]),
         .library(
             name: "TypstUniverseKit",
             targets: ["TypstUniverseCore", "TypstUniverseStorage", "TypstUniverseUI"]
