@@ -248,12 +248,18 @@ public struct FigureCaption: NativeElement {
     /// Pack into content.
     public func pack() -> Content { Content(self) }
 
-    /// Retrieves the locale separator. The `auto` fallback needs `Lang`
-    /// (deferred); until then it resolves to the English default upstream
-    /// uses for unmatched languages.
+    /// Retrieves the locale separator. Port of
+    /// `FigureCaption::local_separator_in` — the language-dependent
+    /// default separator table.
     public func resolveSeparator(styles: StyleChain) -> Content {
         if case let .custom(c) = separator { return c }
-        return TextElem.packed(": ")
+        let lang = Locale.getIn(styles).lang
+        let sep: String
+        if lang == .CHINESE { sep = "\u{2003}" }
+        else if lang == .FRENCH { sep = ".\u{a0}\u{2013} " }
+        else if lang == .RUSSIAN { sep = ". " }
+        else { sep = ": " }
+        return TextElem.packed(sep)
     }
 
     public func field(_ id: UInt8) -> Value? {

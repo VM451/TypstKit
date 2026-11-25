@@ -15,10 +15,9 @@ import TypstSyntax
 
 /// The name with which an element is referenced.
 ///
-/// Port of `LocalName` in `text/lang.rs`. The full i18n stack (`Lang`,
-/// `Region`, `localized_str`, `TRANSLATIONS`) is deferred with the text
-/// milestone; until then `localNameIn` resolves through the English
-/// bundle — which is also upstream's ultimate fallback.
+/// Port of `LocalName` in `text/lang.rs`, backed by the embedded
+/// translation bundles (`Lang`/`TextRegion`/`localizedStr` in
+/// `Text/Lang.swift`).
 public protocol LocalName {
     /// The key of an element in order to get its localized name.
     static var localNameKey: String { get }
@@ -26,33 +25,19 @@ public protocol LocalName {
 
 extension LocalName {
     /// Get the name in the given language and (optionally) region.
-    /// Deferred: always resolves English until `Lang`/`Region` land.
-    public static func localName(lang: Str?, region: Str?) -> String {
-        englishLocalNames[localNameKey] ?? localNameKey
+    /// Port of `LocalName::local_name`.
+    public static func localName(lang: Lang, region: TextRegion?) -> String {
+        localizedStr(lang: lang, region: region, key: localNameKey)
     }
 
     /// Gets the local name from the style chain (`text.lang`/`text.region`).
-    /// Until `Lang`/`Region` land the lookup ignores the actual tags — the
-    /// result is the English bundle either way.
+    /// Port of `LocalName::local_name_in`.
     public static func localNameIn(_ styles: StyleChain) -> String {
-        localName(lang: nil, region: nil)
+        let locale = Locale.getIn(styles)
+        return localizedStr(
+            lang: locale.lang, region: locale.region, key: localNameKey)
     }
 }
-
-/// The English translation bundle (`translations/en.txt` upstream).
-private let englishLocalNames: [String: String] = [
-    "figure": "Figure",
-    "table": "Table",
-    "equation": "Equation",
-    "bibliography": "Bibliography",
-    "heading": "Section",
-    "outline": "Contents",
-    "raw": "Listing",
-    "page": "page",
-    "footnote": "Footnote",
-    "email": "Email",
-    "telephone": "Telephone",
-]
 
 // MARK: - Refable / Outlinable
 

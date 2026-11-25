@@ -924,12 +924,11 @@ public struct TextDir: Sendable, Hashable {
     public init(_ dir: Smart<Dir>) { self.dir = dir }
 
     /// Resolve the direction through the style chain (`Resolve for TextDir`).
-    /// The `auto` fallback is language-dependent upstream (`Lang::dir`);
-    /// until `Lang` lands, auto resolves to left-to-right — correct for
-    /// the English default.
+    /// Auto resolves through the language's direction, like upstream
+    /// (`styles.get(TextElem::lang).dir()`).
     public func resolve(_ styles: StyleChain) -> Dir {
         switch dir {
-        case .auto: return .ltr
+        case .auto: return Locale.getIn(styles).lang.dir()
         case let .custom(d): return d
         }
     }

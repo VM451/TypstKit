@@ -19,7 +19,9 @@ struct MockWorld: World {
          sources: [FileId: String] = [:]) {
         var scope = Scope()
         defineFoundations(scope)
-        self.library = LazyHash(Library(scope: scope))
+        let rules = NativeRuleMap()
+        defineNativeRules(rules)
+        self.library = LazyHash(Library(scope: scope, rules: rules))
         self.book = LazyHash(FontBook())
         self.main = FileId.newForTest("main.typ")
         self.files = files

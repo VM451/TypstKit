@@ -377,7 +377,7 @@ public struct RefElem: NativeElement {
             FieldInfo(id: 2, name: "form"),
             FieldInfo(id: 3, name: "citation"),
         ],
-        capabilities: [.locatable, .tagged]
+        capabilities: [.locatable, .tagged, .unlabellable]
     )
 
     /// The referenced label.
@@ -387,6 +387,13 @@ public struct RefElem: NativeElement {
     /// Upstream: `LooselySpanned<Smart<Option<Supplement>>>`.
     public var supplement: Spanned<Smart<Supplement?>, Span> =
         Spanned(.auto, span: .detached)
+
+    /// The form of the reference.
+    public var form: RefForm = .normal
+
+    /// The citation synthesized from this reference, if it turned out
+    /// to be one (internal, ghost — never set through fields).
+    public var citation: CiteElem?
 
     public var span: Span = .detached
 
@@ -408,14 +415,21 @@ public struct RefElem: NativeElement {
                 }
             case .custom(nil): return .none
             }
+        case 2: return form.intoValue()
+        case 3: return citation.map { .content(Content($0)) }
         default: return nil
         }
     }
 
     public mutating func setField(_ id: UInt8, _ value: Value) throws {
-        guard id == 1 else { return }
-        supplement = Spanned(.custom(supplementValue(from: value)),
-                             span: supplement.span)
+        switch id {
+        case 1:
+            supplement = Spanned(.custom(supplementValue(from: value)),
+                                 span: supplement.span)
+        case 2:
+            if case let .success(f) = RefForm.fromValue(value) { form = f }
+        default: break
+        }
     }
 
     /// Convert a `Value` to `Supplement?` for `setField`.
