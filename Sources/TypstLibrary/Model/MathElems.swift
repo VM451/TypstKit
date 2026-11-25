@@ -64,8 +64,8 @@ public struct EquationElem: NativeElement {
     public func field(_ id: UInt8) -> Value? {
         switch id {
         case 0: return .bool(block)
-        case 1: return numbering ?? .none
-        case 2: return numberAlign ?? .none
+        case 1: return numbering ?? Value.none
+        case 2: return numberAlign ?? Value.none
         case 3:
             switch supplement.value {
             case .auto: return .auto
@@ -74,11 +74,11 @@ public struct EquationElem: NativeElement {
                 case let .content(c): return .content(c)
                 case let .function(f): return .function(f)
                 }
-            case .custom(nil): return .none
+            case .custom(nil): return Value.none
             }
-        case 4: return alt.map { .str(Str($0)) } ?? .none
+        case 4: return alt.map { .str(Str($0)) } ?? Value.none
         case 5: return .content(body)
-        case 6: return size ?? .none
+        case 6: return size ?? Value.none
         default: return nil
         }
     }
@@ -197,12 +197,12 @@ public struct AttachElem: NativeElement {
     public func field(_ id: UInt8) -> Value? {
         switch id {
         case 0: return .content(base)
-        case 1: return t.map { .content($0) } ?? .none
-        case 2: return b.map { .content($0) } ?? .none
-        case 3: return tl.map { .content($0) } ?? .none
-        case 4: return bl.map { .content($0) } ?? .none
-        case 5: return tr.map { .content($0) } ?? .none
-        case 6: return br.map { .content($0) } ?? .none
+        case 1: return t.map { .content($0) } ?? Value.none
+        case 2: return b.map { .content($0) } ?? Value.none
+        case 3: return tl.map { .content($0) } ?? Value.none
+        case 4: return bl.map { .content($0) } ?? Value.none
+        case 5: return tr.map { .content($0) } ?? Value.none
+        case 6: return br.map { .content($0) } ?? Value.none
         default: return nil
         }
     }
@@ -312,7 +312,7 @@ public struct FracElem: NativeElement {
         switch id {
         case 0: return .content(num)
         case 1: return .content(denom)
-        case 2: return style ?? .none
+        case 2: return style ?? Value.none
         case 3: return .bool(numDeparenthesized)
         case 4: return .bool(denomDeparenthesized)
         default: return nil
@@ -361,7 +361,7 @@ public struct RootElem: NativeElement {
 
     public func field(_ id: UInt8) -> Value? {
         switch id {
-        case 0: return index.map { .content($0) } ?? .none
+        case 0: return index.map { .content($0) } ?? Value.none
         case 1: return .content(radicand)
         default: return nil
         }

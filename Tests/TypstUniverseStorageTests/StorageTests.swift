@@ -66,6 +66,19 @@ struct SecureTarTests {
         #expect(entries.map(\.path) == ["pkg/lib.typ"])
     }
 
+    @Test func appliesGnuLongNameAcrossMultipleBlocks() throws {
+        let component = String(repeating: "long-component-", count: 38)
+        let longName = "pkg/\(component)/lib.typ"
+        var tar = makeTarEntry(
+            name: "././@LongName", data: Data((longName + "\0").utf8),
+            typeflag: UInt8(ascii: "L"))
+        tar.append(makeTar([
+            ("pkg/lib.typ", Data("hello".utf8), UInt8(ascii: "0")),
+        ]))
+        let entries = try SecureTarGzExtractor.extractTar(tar)
+        #expect(entries.map(\.path) == [longName])
+    }
+
     @Test func collapsesInnerDotDot() throws {
         let tar = makeTar([("pkg/sub/../lib.typ", Data("hello".utf8), UInt8(ascii: "0"))])
         let entries = try SecureTarGzExtractor.extractTar(tar)

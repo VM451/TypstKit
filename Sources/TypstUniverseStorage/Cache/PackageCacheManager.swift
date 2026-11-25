@@ -143,7 +143,7 @@ public actor PackageCacheManager {
             }
             try FileManager.default.moveItem(at: staging, to: dest)
             report(.downloading(1))
-            try await self.enforceCap()
+            try self.enforceCap()
             return dest
         }
         inFlight[key] = task

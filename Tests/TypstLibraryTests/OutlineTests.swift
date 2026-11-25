@@ -156,7 +156,7 @@ struct OutlineTests {
             try args.finishT()
             return Value.length(Length(Em(2 * Double(n))))
         })
-        var h = FuncHarness()
+        let h = FuncHarness()
         let indent = OutlineIndent.function(f)
         let result = indent.resolve(
             engine: &h.engine, context: h.context,
@@ -273,7 +273,7 @@ struct OutlineTests {
             heading("Detail", depth: 2, location: 20),
             heading("Outro", depth: 1, location: 30),
         ]
-        var h = FuncHarness()
+        let h = FuncHarness()
         h.engine.introspector = introspector(contents)
         let flat = try OutlineElem().realizeFlat(
             engine: &h.engine, styles: StyleChain()).get()
@@ -287,7 +287,7 @@ struct OutlineTests {
             heading("Intro", depth: 1, location: 10),
             heading("Detail", depth: 2, location: 20),
         ]
-        var h = FuncHarness()
+        let h = FuncHarness()
         h.engine.introspector = introspector(contents)
         var outline = OutlineElem()
         outline.depth = NonZeroUsize(value: 1)
@@ -302,7 +302,7 @@ struct OutlineTests {
         var hidden = h2.pack()
         hidden.location = loc(20)
         let contents = [heading("Shown", depth: 1, location: 10), hidden]
-        var h = FuncHarness()
+        let h = FuncHarness()
         h.engine.introspector = introspector(contents)
         let flat = try OutlineElem().realizeFlat(
             engine: &h.engine, styles: StyleChain()).get()
@@ -312,7 +312,7 @@ struct OutlineTests {
     @Test func realizeFlatNonOutlinableErrors() throws {
         var text = TextElem.packed("plain")
         text.location = loc(10)
-        var h = FuncHarness()
+        let h = FuncHarness()
         h.engine.introspector = introspector([text])
         var outline = OutlineElem()
         outline.target = LocatableSelector(
@@ -332,7 +332,7 @@ struct OutlineTests {
             heading("B", depth: 2, location: 20),
             heading("C", depth: 1, location: 30),
         ]
-        var h = FuncHarness()
+        let h = FuncHarness()
         h.engine.introspector = introspector(contents)
         let tree = try OutlineElem().realizeTree(
             engine: &h.engine, styles: StyleChain()).get()
@@ -400,7 +400,7 @@ struct OutlineTests {
 
     @Test func entryPageFormatsNumber() throws {
         let elem = heading("Paged", depth: 1, location: 10)
-        var h = FuncHarness()
+        let h = FuncHarness()
         h.engine.introspector = introspector([elem])
         h.context = Context(location: loc(0), styles: StyleChain())
         var entry = OutlineEntry(level: NonZeroUsize(value: 1),
@@ -417,7 +417,7 @@ struct OutlineTests {
 
     @Test func entryInnerShape() throws {
         let elem = heading("Section", depth: 1, location: 10)
-        var h = FuncHarness()
+        let h = FuncHarness()
         h.engine.introspector = introspector([elem])
         h.context = Context(location: loc(0), styles: StyleChain())
         var entry = OutlineEntry(level: NonZeroUsize(value: 1),
@@ -440,7 +440,7 @@ struct OutlineTests {
 
     @Test func entryInnerNoFillUsesH() throws {
         let elem = heading("Section", depth: 1, location: 10)
-        var h = FuncHarness()
+        let h = FuncHarness()
         h.engine.introspector = introspector([elem])
         h.context = Context(location: loc(0), styles: StyleChain())
         var entry = OutlineEntry(level: NonZeroUsize(value: 1),

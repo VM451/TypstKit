@@ -246,7 +246,7 @@ enum SheetNumFmt {
     /// Lex one section into tokens, honoring quotes and bracket blocks.
     private static func lex(_ s: String) -> [Tok] {
         var out: [Tok] = []
-        var chars = Array(s)
+        let chars = Array(s)
         var i = 0
         var literal = ""
         func flushLit() {
@@ -345,7 +345,7 @@ enum SheetNumFmt {
                 flushLit(); out.append(.slash)
             case ":":
                 flushLit(); out.append(.colon)
-            case " ", "-", "+", "(", ")", "{", "}", ".", ";":
+            case " ", "-", "+", "(", ")", "{", "}", ";":
                 literal.append(ch)
             default:
                 if ch.isLetter {
@@ -370,7 +370,7 @@ enum SheetNumFmt {
         if case .condition(let c)? = toks.first {
             // [>100] etc.
             var op = String(c.prefix(while: { "<>=!".contains($0) }))
-            var body = String(c.dropFirst(op.count))
+            let body = String(c.dropFirst(op.count))
             // "!=" is the not-equal spelling some producers emit.
             if op == "!=" { op = "<>" }
             if let v = Double(body) {

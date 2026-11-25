@@ -203,7 +203,7 @@ private func parseParagraph(_ p: XmlElement, _ ctx: DocxCtx)
     let kind: DocxParaKind
     if let level = heading {
         let label: String? = {
-            guard let (ilvl, key, number, label) = numbering,
+            guard let (_, key, number, label) = numbering,
                   key.marker.ordered else { return nil }
             return "\(label ?? key.marker.label(number)) "
         }()

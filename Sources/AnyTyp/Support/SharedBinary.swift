@@ -61,7 +61,7 @@ func readOleStream(_ ole: OleFile, _ name: String) throws -> [UInt8] {
                 detail: "\(name) stream exceeds the read cap")
         }
         return bytes
-    } catch let e as OleFile.OleError {
+    } catch is OleFile.OleError {
         throw ConvertError.missingPart(part: name)
     }
 }

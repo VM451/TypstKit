@@ -34,7 +34,7 @@ struct ReferenceTests {
     private func harness(
         _ contents: [Content]
     ) -> FuncHarness {
-        var h = FuncHarness()
+        let h = FuncHarness()
         h.engine.introspector = introspector(contents)
         return h
     }
@@ -74,7 +74,7 @@ struct ReferenceTests {
     ) throws -> Content {
         var heading = HeadingElem(body: TextElem.packed("Title"))
         heading.numbering = .pattern(try! NumberingPattern(parsing: "1"))
-        var h = FuncHarness()
+        let h = FuncHarness()
         try heading.synthesize(
             engine: &h.engine, styles: StyleChain(), location: loc(key))
         var content = heading.pack()
@@ -86,7 +86,7 @@ struct ReferenceTests {
     @Test func realizeNormalForm() throws {
         let label = LibLabel(name: .intern("intro"))!
         let target = try numberedHeading(label, key: 42)
-        var h = harness([target])
+        let h = harness([target])
 
         var ref = RefElem(target: label)
         ref.span = Span.detached
@@ -110,7 +110,7 @@ struct ReferenceTests {
     }
 
     @Test func realizeMissingLabelErrors() throws {
-        var h = harness([])
+        let h = harness([])
         let ref = RefElem(target: LibLabel(name: .intern("nope"))!)
         let result = ref.realize(engine: &h.engine, styles: StyleChain())
         guard case let .failure(err) = result else {
@@ -125,7 +125,7 @@ struct ReferenceTests {
         var content = HeadingElem(body: TextElem.packed("x")).pack()
         content.location = loc(7)
         content.label = label
-        var h = harness([content])
+        let h = harness([content])
         let ref = RefElem(target: label)
         let result = ref.realize(engine: &h.engine, styles: StyleChain())
         guard case let .failure(err) = result else {
@@ -139,7 +139,7 @@ struct ReferenceTests {
         var content = TextElem.packed("plain")
         content.location = loc(9)
         content.label = label
-        var h = harness([content])
+        let h = harness([content])
         let ref = RefElem(target: label)
         let result = ref.realize(engine: &h.engine, styles: StyleChain())
         guard case let .failure(err) = result else {
@@ -157,7 +157,7 @@ struct ReferenceTests {
         // distinguishable. This test documents current behavior.
         content.location = loc(11)
         content.label = label
-        var h = harness([content])
+        let h = harness([content])
         let ref = RefElem(target: label)
         let result = ref.realize(engine: &h.engine, styles: StyleChain())
         // FigureElem IS Refable but unsynthesized — must not crash.
@@ -170,7 +170,7 @@ struct ReferenceTests {
         var content = Content(footnote)
         content.location = loc(13)
         content.label = label
-        var h = harness([content])
+        let h = harness([content])
         let ref = RefElem(target: label)
         let result = try ref.realize(
             engine: &h.engine, styles: StyleChain()).get()
@@ -188,7 +188,7 @@ struct ReferenceTests {
         // numbering is absent → the upstream error path.
         let label = LibLabel(name: .intern("intro"))!
         let target = try numberedHeading(label, key: 42)
-        var h = harness([target])
+        let h = harness([target])
         var ref = RefElem(target: label)
         ref.form = .page
         let result = ref.realize(engine: &h.engine, styles: StyleChain())
@@ -203,7 +203,7 @@ struct ReferenceTests {
     @Test func realizeCustomSupplement() throws {
         let label = LibLabel(name: .intern("intro"))!
         let target = try numberedHeading(label, key: 42)
-        var h = harness([target])
+        let h = harness([target])
         var ref = RefElem(target: label)
         ref.supplement = Spanned<Smart<Supplement?>, Span>(
             .custom(.content(TextElem.packed("Chap."))), span: Span.detached)
@@ -219,7 +219,7 @@ struct ReferenceTests {
     @Test func realizeNoneSupplementOmitsNbsp() throws {
         let label = LibLabel(name: .intern("intro"))!
         let target = try numberedHeading(label, key: 42)
-        var h = harness([target])
+        let h = harness([target])
         var ref = RefElem(target: label)
         ref.supplement = Spanned<Smart<Supplement?>, Span>(
             .custom(nil), span: Span.detached)

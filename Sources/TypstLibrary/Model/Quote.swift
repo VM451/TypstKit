@@ -123,7 +123,7 @@ public struct QuoteElem: NativeElement {
         switch id {
         case 0: return .bool(block)
         case 1: return quotes.intoValue()
-        case 2: return attribution?.intoValue() ?? .none
+        case 2: return attribution?.intoValue() ?? Value.none
         case 3: return body.intoValue()
         default: return nil
         }

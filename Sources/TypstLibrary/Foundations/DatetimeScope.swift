@@ -317,7 +317,7 @@ private func datetimeAccessor(
     ) { _, _, args in
         let datetime: Datetime = try args.expectT("self")
         try args.finishT()
-        return value(datetime).map { Value.int($0) } ?? .none
+        return value(datetime).map { Value.int($0) } ?? Value.none
     }
 }
 

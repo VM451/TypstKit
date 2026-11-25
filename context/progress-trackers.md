@@ -18,3 +18,10 @@
 - Done: Exported `TypstUniverseCore` and `TypstUniverseStorage` as standalone SwiftPM products while keeping umbrella `TypstUniverseKit`.
 - Why: Headless hosts documented as Core+Storage consumers could not resolve those products after the repository consolidation into TypstKit.
 - Verification: `swift package describe` exports both products; `swift build --target TypstUniverseStorage` passes in 45.64s. Prior full `swift test` passes on the scaffolder/API change.
+
+## 2026-11-25 - Swift 6 zero-warning gate + GNU tar long-name fix
+
+- Done: Restored the compiler-port zero-warning baseline after auditing `PARITY_TRACKER.md` and refreshing the upstream `typst` reference clone.
+- Fixed: `SecureTarGzExtractor` now consumes padded GNU long-name payload blocks and applies the long name to the following entry; added `appliesGnuLongNameAcrossMultipleBlocks` regression coverage.
+- Done: Converted `.none`-ambiguity warnings to explicit `Value.none`/`nil`, removed invalid effect markers, reworked closure-based array sorting error capture, and addressed Sendable-metatype diagnostics in `nativeFunc`/`Never`.
+- Context: Refreshed stale product/system context in `project-overview.md` and `architecture.md` for the multi-product native Typst compiler rewrite.

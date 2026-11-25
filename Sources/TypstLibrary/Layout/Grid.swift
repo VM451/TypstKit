@@ -553,8 +553,8 @@ public struct GridHLine: NativeElement {
         switch id {
         case 0: return y.intoValue()
         case 1: return .int(Int64(start))
-        case 2: return end?.intoValue() ?? .none
-        case 3: return stroke?.intoValue() ?? .none
+        case 2: return end?.intoValue() ?? Value.none
+        case 3: return stroke?.intoValue() ?? Value.none
         case 4: return position.intoValue()
         default: return nil
         }
@@ -605,8 +605,8 @@ public struct GridVLine: NativeElement {
         switch id {
         case 0: return x.intoValue()
         case 1: return .int(Int64(start))
-        case 2: return end?.intoValue() ?? .none
-        case 3: return stroke?.intoValue() ?? .none
+        case 2: return end?.intoValue() ?? Value.none
+        case 3: return stroke?.intoValue() ?? Value.none
         case 4: return position.intoValue()
         default: return nil
         }

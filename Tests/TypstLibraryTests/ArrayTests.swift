@@ -177,11 +177,11 @@ import TypstUtils
         #expect(try eval(arrayRange, [i(-4), i(2)])
             == arr(i(-4), i(-3), i(-2), i(-1), i(0), i(1)))
         #expect(try eval(arrayRange, [i(10), i(5)]) == arr())
-        #expect(try rng(0, 10, step: 3) == arr(i(0), i(3), i(6), i(9)))
-        #expect(try rng(1, 4, step: 1) == arr(i(1), i(2), i(3)))
-        #expect(try rng(1, 8, step: 2) == arr(i(1), i(3), i(5), i(7)))
-        #expect(try rng(5, 2, step: -1) == arr(i(5), i(4), i(3)))
-        #expect(try rng(10, 0, step: -3) == arr(i(10), i(7), i(4), i(1)))
+        #expect(rng(0, 10, step: 3) == arr(i(0), i(3), i(6), i(9)))
+        #expect(rng(1, 4, step: 1) == arr(i(1), i(2), i(3)))
+        #expect(rng(1, 8, step: 2) == arr(i(1), i(3), i(5), i(7)))
+        #expect(rng(5, 2, step: -1) == arr(i(5), i(4), i(3)))
+        #expect(rng(10, 0, step: -3) == arr(i(10), i(7), i(4), i(1)))
         #expect(try eval(arrayRange, [i(0), i(0)],
                          named: [named("inclusive", .bool(true))]) == arr(i(0)))
         #expect(try eval(arrayRange, [i(-10), i(-8)],
@@ -214,8 +214,8 @@ import TypstUtils
                                  named("step", i(-1))])
             == arr(i(min + 2), i(-max), i(min)))
         // Stepping would overflow — loop breaks instead of trapping.
-        #expect(try rng(2, 3, step: max) == arr(i(2)))
-        #expect(try rng(-2, -3, step: min) == arr(i(-2)))
+        #expect(rng(2, 3, step: max) == arr(i(2)))
+        #expect(rng(-2, -3, step: min) == arr(i(-2)))
         #expect(try eval(arrayRange, [i(max - 1), i(max)],
                          named: [named("inclusive", .bool(true)),
                                  named("step", i(2))]) == arr(i(max - 1)))

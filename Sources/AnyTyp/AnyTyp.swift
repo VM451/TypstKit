@@ -114,11 +114,9 @@ public enum AnyTyp {
                 "unrecognized file content: name the format explicitly"
             ).anyTypError
         }
-        do {
-            return try Formats.parse(bytes, resolved).get()
-        } catch let e as ConvertError {
-            throw e.anyTypError
-        }
+        return try Formats.parse(bytes, resolved)
+            .mapError { $0.anyTypError }
+            .get()
     }
 
     private static func convertLoaded(
@@ -128,11 +126,9 @@ public enum AnyTyp {
     ) throws -> String {
         let bytes = [UInt8](data)
         let doc: AnyTypDocument
-        do {
-            doc = try Formats.parse(bytes, format).get()
-        } catch let e as ConvertError {
-            throw e.anyTypError
-        }
+        doc = try Formats.parse(bytes, format)
+            .mapError { $0.anyTypError }
+            .get()
         if let dir = options.extractAssetsTo {
             do {
                 try writeAssets(doc, to: dir)

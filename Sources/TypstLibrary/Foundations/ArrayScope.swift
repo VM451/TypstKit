@@ -790,7 +790,7 @@ let arrayJoin = nativeFunc(
         return defaultValue
     }
 
-    let sep = separator ?? .none
+    let sep = separator ?? Value.none
     var lastRemaining = lastOpt
     var result: Value = .none
     for (i, value) in array.items.enumerated() {
@@ -977,31 +977,36 @@ let arraySorted = nativeFunc(
     if let by {
         // Boolean-comparator path: `by(x, y)` true = in order.
         var result: SourceResult<Void> = .success(())
-        func areInOrder(_ x: Value, _ y: Value) -> ComparisonResult {
-            do {
-                var kx = x, ky = y
-                if let key {
-                    kx = try callArrayFunc(
-                        key.value, engine: &engine, context: context,
-                        [x], span: span)
-                    ky = try callArrayFunc(
-                        key.value, engine: &engine, context: context,
-                        [y], span: span)
-                }
-                let b: Bool = try callArrayFunc(
-                    by.value, engine: &engine, context: context,
-                    [kx, ky], span: span)
-                // `by(x, y)` true means x belongs before y; a stable merge
-                // sort preserves the original order for equal elements,
-                // matching upstream's unspecified-order contract for
-                // inconsistent comparators.
-                return b ? .orderedAscending : .orderedDescending
-            } catch {
-                if case .success = result {
-                    result = sourceFailure(error, span: span)
-                }
-                return .orderedSame
+        func capture<T>(_ outcome: SourceResult<T>) -> T? {
+            switch outcome {
+            case .success(let value): return value
+            case .failure(let diagnostics):
+                if case .success = result { result = .failure(diagnostics) }
+                return nil
             }
+        }
+        func areInOrder(_ x: Value, _ y: Value) -> ComparisonResult {
+            var kx = x, ky = y
+            if let key {
+                guard let kxValue: Value = capture(key.value.call(
+                    engine: &engine, context: context,
+                    args: Args(span: .detached, values: [x]), span: span)),
+                    let kyValue: Value = capture(key.value.call(
+                        engine: &engine, context: context,
+                        args: Args(span: .detached, values: [y]), span: span))
+                else { return .orderedSame }
+                kx = kxValue
+                ky = kyValue
+            }
+            guard let b: Bool = capture(by.value.call(
+                engine: &engine, context: context,
+                args: Args(span: .detached, values: [kx, ky]), span: span))
+            else { return .orderedSame }
+            // `by(x, y)` true means x belongs before y; a stable merge
+            // sort preserves the original order for equal elements,
+            // matching upstream's unspecified-order contract for
+            // inconsistent comparators.
+            return b ? .orderedAscending : .orderedDescending
         }
         let sorted = stableSortedMerge(array.items, areInOrder)
         try unwrap(result)
@@ -1160,7 +1165,7 @@ let arrayReduce = nativeFunc(
     try args.finishT()
 
     var iter = array.items.makeIterator()
-    var acc = iter.next() ?? .none
+    var acc = iter.next() ?? Value.none
     for item in iter {
         acc = try callArrayFunc(
             reducer, engine: &engine, context: context,

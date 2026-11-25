@@ -483,7 +483,7 @@ private func evalClosureBody(
             }
         case let .named(named):
             let paramName = named.name()
-            let defaultValue = defaults.next() ?? .none
+            let defaultValue = defaults.next() ?? Value.none
             let value = try unwrap(args.named(paramName.get())) ?? defaultValue
             vm.define(paramName, value)
         }
@@ -509,7 +509,7 @@ private func evalClosureBody(
     switch vm.flow {
     case .return(_, .some(let explicit), _):
         return explicit
-    case .return(_, .none, _), .none:
+    case .return(_, nil, _), .none:
         break
     case let .some(flow):
         throw flow.forbidden()

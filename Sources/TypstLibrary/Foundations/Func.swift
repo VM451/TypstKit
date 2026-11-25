@@ -610,7 +610,7 @@ public struct Closure: Sendable, Hashable {
             case let .named(named):
                 info = .named(
                     name: named.name().get(),
-                    defaultValue: defaults.next() ?? .none
+                    defaultValue: defaults.next() ?? Value.none
                 )
             }
             return Spanned(info, span: param.span)

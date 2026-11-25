@@ -126,7 +126,7 @@ public struct CurveElem: NativeElement {
 
     public func field(_ id: UInt8) -> Value? {
         switch id {
-        case 0: return fill?.intoValue() ?? .none
+        case 0: return fill?.intoValue() ?? Value.none
         case 1: return fillRule.intoValue()
         case 2: return stroke.intoValue()
         case 3: return .array(ArrayValue(items: components.map { $0.intoValue() }))
@@ -346,8 +346,8 @@ public struct CurveCubic: NativeElement {
 
     public func field(_ id: UInt8) -> Value? {
         switch id {
-        case 0: return controlStart?.intoValue() ?? .none
-        case 1: return controlEnd?.intoValue() ?? .none
+        case 0: return controlStart?.intoValue() ?? Value.none
+        case 1: return controlEnd?.intoValue() ?? Value.none
         case 2: return end.intoValue()
         case 3: return .bool(relative)
         default: return nil

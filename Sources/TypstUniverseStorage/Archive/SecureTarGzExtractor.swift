@@ -65,20 +65,11 @@ public enum SecureTarGzExtractor {
             let size = Int(octal: sizeStr.trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0
             var entryName = prefix.isEmpty ? name : "\(prefix)/\(name)"
             if typeflag == UInt8(ascii: "L") {
-                // GNU long name: data blocks hold the real name.
-                var longData = Data()
-                var remaining = size
-                while remaining > 0 {
-                    let chunk = try read(min(512, remaining + (512 - remaining % 512) % 512 > 0 && remaining < 512 ? 512 : 512))
-                    _ = chunk
-                    remaining -= 512
-                    break
-                }
-                // Re-read properly: size rounded up to 512.
-                // (Simplest: we already consumed one 512 window above only when size<=512;
-                // for larger, loop.)
-                // To keep code small, handle common single-block case:
-                pendingLongName = cString(longData, 0, longData.count)
+                // GNU long name: data blocks hold the real name, padded to
+                // a 512-byte boundary like every other tar payload.
+                let padded = (size + 511) / 512 * 512
+                let longData = size > 0 ? try read(padded).prefix(size) : Data()
+                pendingLongName = cString(Data(longData), 0, longData.count)
                 continue
             }
             if pendingLongName != nil { entryName = pendingLongName!; pendingLongName = nil }

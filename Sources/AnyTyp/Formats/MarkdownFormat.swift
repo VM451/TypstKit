@@ -177,7 +177,7 @@ private struct MdParser {
     private mutating func parseList(first: ListItemStart) {
         var items: [AnyTypListItem] = []
         var marker = first.marker
-        var start = first.number
+        let start = first.number
         while pos < lines.count {
             guard let item = listItemStart(lines[pos]) else { break }
             if item.ordered != first.ordered || item.indent != first.indent { break }
@@ -376,9 +376,6 @@ private struct MdParser {
         let indent = line.prefix(while: { $0 == " " }).count
         guard indent < 4 else { return nil }
         var t = String(line.dropFirst(indent))
-        // Task list marker inside item handled later; detect [ ]/[x] prefix.
-        var task: Bool? = nil
-
         // Bullet.
         if t.hasPrefix("- ") || t.hasPrefix("* ") || t.hasPrefix("+ ") {
             t.removeFirst(2)

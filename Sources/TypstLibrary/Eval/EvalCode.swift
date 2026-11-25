@@ -144,9 +144,6 @@ extension Expr {
         case .mathPrimes(let v): value = .content(try v.eval(&vm))
         case .mathFrac(let v): value = .content(try v.eval(&vm))
         case .mathRoot(let v): value = .content(try v.eval(&vm))
-        // Markup nodes handled above; remaining cases are pending ports.
-        default:
-            throw evalNotImplemented(span, "expression")
         }
 
         let spanned = value.spanned(span)
@@ -395,7 +392,7 @@ func accessField(vm: inout Vm, target: Value, field: String,
 /// deferred until introspection elements land.
 func warnForDiscardedContent(engine: Engine, event: FlowEvent,
                              joined: Value) {
-    guard case let .return(_, .some, false) = event,
+    guard case .return(_, .some, false) = event,
           case .content = joined else { return }
 
     var diagnostic = SourceDiagnostic.warning(

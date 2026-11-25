@@ -1,7 +1,7 @@
 # TypstKit Parity Tracker
 
 Status: `Not Started` / `In Progress` / `Verified`.
-Reference: `.reference/typst` @ latest main (cloned depth-1).
+Reference: `.reference/typst` @ `4dd1e4c` (depth-1 clone refreshed 2026-11-25).
 
 ## Phase 0 — Audit & scaffold
 
@@ -10,6 +10,9 @@ Reference: `.reference/typst` @ latest main (cloned depth-1).
 - [x] ARCHITECTURE.md written
 - [x] PARITY_TRACKER.md written
 - [x] `swift build` green
+- [x] 2026-11-25 zero-warning baseline restored; non-UI test bundles run green
+      on this host (UI test execution blocked by running macOS older than the
+      macOS 27 deployment toolchain)
 
 ## Phase 1 — TypstUtils & TypstSyntax
 

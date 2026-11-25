@@ -10,28 +10,38 @@ TypstUtils      interning, bitsets, hash helpers, memoization cache
 TypstSyntax     lossless CST: Source, Span/FileId, SyntaxKind, lexer,
                 parser, AST accessors, incremental reparser
 TypstLibrary    Value/Content model, StyleChain, World protocol,
-                foundations (calc/str/array/dict/...), diagnostics
-TypstEval       expression evaluator: scopes, closures, set/show rules,
-                imports, module system
-TypstRealize    show-rule expansion + style inheritance -> layout-ready
-                element trees
-TypstLayout     frames, text shaping (CoreText), line breaking,
-                page/flow/grid/table/figure/math layout
-TypstExport     PDF, SVG, raster (CGImage), HTML exporters
+                foundations (calc/str/array/dict/...), diagnostics,
+                evaluator, realization/introspection, model/layout
+                element definitions
+TypstExport     PDF, SVG, raster (CGImage), HTML exporters (planned)
 TypstIDE        highlighting, completion, tooltips, jump-to-source
+                (planned)
 TypstKit         umbrella product: TypstCompiler/TypstDocument/
                 TypstWorld public API
 ```
 
-Dependency direction is strictly downward (Kit -> Export -> Layout ->
-Realize -> Eval -> Library -> Syntax -> Utils). No upward edges.
+The currently compiled graph is `TypstLibrary -> TypstSyntax ->
+TypstUtils`. Unlike the original scaffold sketch, `TypstEval` and
+`TypstRealize` are internal namespaces inside `TypstLibrary`, not separate
+SwiftPM targets: element construction, closures, show rules, and the
+evaluator are mutually recursive, and splitting them now would force
+either circular target edges or large unstable public surfaces. Revisit
+that decomposition when layout/export land. The intended export/IDE
+layers remain strictly downstream of `TypstLibrary`; no upward edges.
+
+The `TypstKit` SwiftPM library product currently re-exports the compiler
+stack through `TypstUtils`, `TypstSyntax`, and `TypstLibrary`. Planned
+export/IDE targets should be added as new products rather than moving or
+renaming the existing Universe/AnyTyp products.
 
 ## Value & memory strategy
 
-- `Value` and `Content` are reference types (`final class`, CoW where
-  cheap) because upstream relies on cheap cloning + pointer-equality
-  memoization keys (`comemo`). `Content` gets a unique `id` for
-  memoization, mirroring upstream's `Content::id`.
+- `Value` is an indirect enum and `Content` is a value type wrapping a
+  type-erased `PackedElement` plus metadata. Where upstream relies on
+  cheap cloning, Swift's copy-on-write storage plus value equality and
+  precomputed element hashes provide the practical equivalent; identity
+  is still explicit in `Location`, `Label`, spans, and memoization keys
+  rather than object identity.
 - `Span` is a `UInt64` bit-packed value identical to upstream
   (`NonZeroU64`: 16-bit FileId | 48-bit number). `FileId` is a globally
   interned `UInt16` handle (lock-guarded interner, `NSLock`).

@@ -158,7 +158,7 @@ struct ElementIntrospectorTests {
         #expect(intro.queryFirst(textSelector) == nil)
         if case .success = intro.queryUnique(textSelector) { Issue.record("expected failure") }
         #expect(intro.queryLabelled().isEmpty)
-        let anyLabel = try! TypstLibrary.Label(name: .intern("x"))!
+        let anyLabel = TypstLibrary.Label(name: .intern("x"))!
         #expect(intro.labelCount(anyLabel) == 0)
         #expect(intro.pages(loc(1)) == nil)
         #expect(intro.position(loc(1)) == nil)

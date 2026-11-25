@@ -77,7 +77,7 @@ struct CounterTests {
 
     @Test func stateSetAndFuncUpdate() throws {
         var s = CounterState([1, 2])
-        var tmp = FuncHarness()
+        let tmp = FuncHarness()
         guard case .success = s.update(engine: &tmp.engine,
                                        update: .set(CounterState([7, 8, 9])))
         else { Issue.record("set update failed"); return }
@@ -97,7 +97,7 @@ struct CounterTests {
         })
         // Function updates receive all numbers as arguments.
         s = CounterState([4])
-        var h = FuncHarness()
+        let h = FuncHarness()
         guard case .success = s.update(engine: &h.engine,
                                        update: .function(addTen))
         else { Issue.record("func update failed"); return }
@@ -111,7 +111,7 @@ struct CounterTests {
             == [1, 2])
         #expect((try? CounterState.fromValue(.int(-1)).get()) == nil)
         #expect((try? CounterState.fromValue(.str(TypstLibrary.Str("x"))).get()) == nil)
-        #expect(try CounterState([1, 2]).intoValue()
+        #expect(CounterState([1, 2]).intoValue()
             == .array(ArrayValue(items: [.int(1), .int(2)])))
     }
 
@@ -207,7 +207,7 @@ struct CounterTests {
             update(key.key, .step(NonZeroUsize(value: 1)), 3),
         ]
         let introspector = introspector(contents)
-        var h = FuncHarness()
+        let h = FuncHarness()
         h.engine.introspector = introspector
 
         // Before the first update → initial state. (loc(1000) is the
@@ -233,7 +233,7 @@ struct CounterTests {
             update(key.key, .set(CounterState([4])), 1),
             update(key.key, .set(CounterState([9])), 2),
         ]
-        var h = FuncHarness()
+        let h = FuncHarness()
         h.engine.introspector = introspector(contents)
         let state = try h.engine.introspect(CounterFinalIntrospection(
             counter: key, location: loc(0), span: .detached)).get()
@@ -246,7 +246,7 @@ struct CounterTests {
             update(key.key, .set(CounterState([4])), 1),
             update(key.key, .set(CounterState([9])), 2),
         ]
-        var h = FuncHarness()
+        let h = FuncHarness()
         h.engine.introspector = introspector(contents)
         // At loc 1: at=4, final=9.
         let state = try h.engine.introspect(CounterBothIntrospection(
@@ -270,7 +270,7 @@ struct CounterTests {
         let contents = [Content(h1), Content(h2), Content(h3), Content(h4)]
         let introspector = introspector(contents)
         let counter = Counter.of(Element(HeadingElem.self))
-        var h = FuncHarness()
+        let h = FuncHarness()
         h.engine.introspector = introspector
 
         // After h1 (loc 1000): [1]. After h2 (loc 1001): [1,1].
@@ -297,7 +297,7 @@ struct CounterTests {
         let contents = [
             update(key, .set(CounterState([5])), 1),
         ]
-        var h = FuncHarness()
+        let h = FuncHarness()
         h.engine.introspector = introspector(contents)
         let counter = Counter(key)
         let state = try h.engine.introspect(CounterAtIntrospection(

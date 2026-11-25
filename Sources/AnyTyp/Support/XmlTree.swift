@@ -561,7 +561,7 @@ private struct XmlParser {
             elemLocal = rawName
         }
 
-        var element = XmlElement(ns: elemNs, local: elemLocal, attrs: attrs)
+        let element = XmlElement(ns: elemNs, local: elemLocal, attrs: attrs)
 
         // mc:Choice/@Requires holds namespace *prefixes* evaluated in the
         // element's lexical scope. Resolve them to URIs here, where the scope

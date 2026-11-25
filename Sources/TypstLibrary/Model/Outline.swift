@@ -302,7 +302,7 @@ public struct OutlineElem: NativeElement {
         switch id {
         case 0: return title.intoValue()
         case 1: return target.intoValue()
-        case 2: return depth?.intoValue() ?? .none
+        case 2: return depth?.intoValue() ?? Value.none
         case 3: return indent.intoValue()
         default: return nil
         }
@@ -564,8 +564,8 @@ public struct OutlineEntry: NativeElement {
         switch id {
         case 0: return level.intoValue()
         case 1: return element.intoValue()
-        case 2: return fill?.intoValue() ?? .none
-        case 3: return parent?.intoValue() ?? .none
+        case 2: return fill?.intoValue() ?? Value.none
+        case 3: return parent?.intoValue() ?? Value.none
         default: return nil
         }
     }

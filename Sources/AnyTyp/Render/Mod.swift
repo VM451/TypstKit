@@ -197,7 +197,7 @@ func renderBlocks(_ blocks: [AnyTypBlock], rc: RenderContext) -> String {
 
 private func renderBlock(_ block: AnyTypBlock, rc: RenderContext) -> String? {
     switch block {
-    case .heading(let level, let anchor, let content):
+    case .heading(let level, _, let content):
         let thisIdx = rc.headingCounter
         rc.headingCounter += 1
         let label = rc.anchors.headingLabel(thisIdx)

@@ -447,7 +447,7 @@ public struct HighlightElem: NativeElement {
 
     public func field(_ id: UInt8) -> Value? {
         switch id {
-        case 0: return fill?.intoValue() ?? .none
+        case 0: return fill?.intoValue() ?? Value.none
         case 1: return stroke.intoValue()
         case 2: return topEdge.intoValue()
         case 3: return bottomEdge.intoValue()
