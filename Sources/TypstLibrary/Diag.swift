@@ -99,7 +99,7 @@ extension Tracepoint: CustomStringConvertible {
 
 /// Boxed source diagnostics used as the `Failure` of `SourceResult`.
 /// Mirrors upstream's `EcoVec<SourceDiagnostic>` error payload.
-public struct SourceDiagnostics: Error, Sendable {
+public struct SourceDiagnostics: Error, Sendable, Hashable {
     /// The collected diagnostics.
     public var diagnostics: [SourceDiagnostic]
 

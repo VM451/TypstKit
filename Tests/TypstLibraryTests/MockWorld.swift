@@ -56,6 +56,46 @@ struct MockWorld: World {
     }
 }
 
+/// `Introspector` existential backed by `ElementIntrospector` — stands in
+/// for the paged introspector until the layout milestone provides the real
+/// one. Page-level queries return nil, matching `EmptyIntrospector`'s
+/// shape.
+struct TestIntrospector: Introspector {
+    let inner: ElementIntrospector<Int>
+
+    func query(_ selector: TypstLibrary.Selector) -> [Content] {
+        inner.query(selector)
+    }
+    func queryFirst(_ selector: TypstLibrary.Selector) -> Content? {
+        inner.queryFirst(selector)
+    }
+    func queryUnique(_ selector: TypstLibrary.Selector) -> StrResult<Content> {
+        inner.queryUnique(selector)
+    }
+    func queryLabel(_ label: TypstLibrary.Label) -> StrResult<Content> {
+        inner.queryLabel(label)
+    }
+    func queryLabelled() -> [Content] { inner.queryLabelled() }
+    func queryCountBefore(_ selector: TypstLibrary.Selector,
+                          end: Location) -> Int {
+        inner.queryCountBefore(selector, end: end)
+    }
+    func labelCount(_ label: TypstLibrary.Label) -> Int {
+        inner.labelCount(label)
+    }
+    func locator(_ key: Hash128, base: Location) -> Location? {
+        inner.locator(key, base: base)
+    }
+    func pages(_ location: Location) -> Int? { nil }
+    func page(_ location: Location) -> Int? { nil }
+    func position(_ location: Location) -> DocumentPosition? { nil }
+    func pageNumbering(_ location: Location) -> Numbering? { nil }
+    func pageSupplement(_ location: Location) -> Content? { nil }
+    func anchor(_ location: Location) -> String? { nil }
+    func document(_ location: Location) -> Location? { nil }
+    func path(_ location: Location) -> VirtualPath? { nil }
+}
+
 /// Shared engine/context for direct function invocation.
 final class FuncHarness {
     var engine: Engine

@@ -288,6 +288,8 @@ extension MetadataElem {
 
 /// Port of upstream `introspection/mod.rs` global registration.
 func defineIntrospection(into global: Scope) {
+    global.defineType(Location.self)
+    global.defineType(State.self)
     global.defineFunc(queryFunc)
     global.defineFunc(locateFunc)
     global.defineFunc(hereFunc)
