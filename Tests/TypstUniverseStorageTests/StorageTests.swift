@@ -79,6 +79,21 @@ struct SecureTarTests {
         #expect(entries.map(\.path) == [longName])
     }
 
+    @Test func appliesUnicodeLongNameWhenHeaderCopySplitsUtf8() throws {
+        // 99 ASCII bytes put the two-byte `é` across the 100-byte header
+        // field boundary; the full long-name payload is still valid UTF-8.
+        let longName = "pkg/" + String(repeating: "a", count: 95) + "é/lib.typ"
+        #expect(Array(longName.utf8.prefix(99)).last == UInt8(ascii: "a"))
+        var tar = makeTarEntry(
+            name: longName, data: Data((longName + "\0").utf8),
+            typeflag: UInt8(ascii: "L"))
+        tar.append(makeTar([
+            ("pkg/lib.typ", Data("hello".utf8), UInt8(ascii: "0")),
+        ]))
+        let entries = try SecureTarGzExtractor.extractTar(tar)
+        #expect(entries.map(\.path) == [longName])
+    }
+
     @Test func collapsesInnerDotDot() throws {
         let tar = makeTar([("pkg/sub/../lib.typ", Data("hello".utf8), UInt8(ascii: "0"))])
         let entries = try SecureTarGzExtractor.extractTar(tar)
