@@ -13,7 +13,7 @@ public struct Engine {
     public var world: World
 
     /// Introspection state (mutable across layout passes).
-    public var introspector: Introspector
+    public var introspector: any Introspector
 
     /// Trace points collected during evaluation.
     public var traced: Traced
@@ -34,7 +34,7 @@ public struct Engine {
 
     public init(world: World) {
         self.world = world
-        self.introspector = Introspector()
+        self.introspector = EmptyIntrospector()
         self.traced = Traced()
         self.sink = Sink()
         self.route = Route()

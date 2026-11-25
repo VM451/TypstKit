@@ -85,7 +85,7 @@ public func evalString(
     world: World,
     library: LazyHash<Library>,
     sink: Sink,
-    introspector: Introspector,
+    introspector: any Introspector,
     context: Context,
     string: String,
     spans: SpanMode,
