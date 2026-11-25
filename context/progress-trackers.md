@@ -26,3 +26,4 @@
 - Done: Converted `.none`-ambiguity warnings to explicit `Value.none`/`nil`, removed invalid effect markers, reworked closure-based array sorting error capture, and addressed Sendable-metatype diagnostics in `nativeFunc`/`Never`.
 - Context: Refreshed stale product/system context in `project-overview.md` and `architecture.md` for the multi-product native Typst compiler rewrite.
 - Review fixes: GNU long-name TAR entries now tolerate header copies that split UTF-8 scalars (22/22 storage tests pass); unset optional `fill` fields now remain unset so style-chain inheritance applies across boxes, blocks, shapes, curves, highlights, and outline entries (540/540 library tests pass).
+- Review follow-up: `OutlineEntry.fill` now tracks explicit set state separately from its dotted-repeat default, so `fill: none` is readable as `none` while unset entries still inherit/resolve the default (541/541 library tests pass).
