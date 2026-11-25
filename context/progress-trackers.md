@@ -6,3 +6,9 @@
 - Decisions: Default root `context/` (no `.context/` existed); no nested `AGENTS.md` created — recommend only for `Examples/UniverseExplorerApp` if its commands diverge.
 - Risks: UI tokens/commands marked TBD where repo has no single source; verify with Xcode 27 toolchain.
 - Next: Fill TBD items (accent/contrast audit, exact doc-build flags); keep kit in sync per AGENTS.md maintenance rule.
+
+## 2026-11-25 - In-memory scaffold entrypoint API
+
+- Done: Added `scaffoldTemplateInMemory` returning scaffolded files plus the manifest-declared template entrypoint; kept files-only `scaffoldInMemory` as a compatibility wrapper.
+- Why: Host apps could otherwise guess the wrong first `.typ` file when templates expose multiple starters (for example resume plus cover letter).
+- Verification: targeted `scaffoldTemplateInMemoryReportsManifestEntrypoint` regression passes; full `swift test` passes (including 539 core tests in 43 suites plus storage/UI/conversion lanes).

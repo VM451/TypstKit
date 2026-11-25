@@ -20,6 +20,19 @@ public struct ScaffoldedTemplateProject: Sendable, Hashable, Codable {
     }
 }
 
+/// In-memory scaffold result. `entrypoint` is the manifest-declared
+/// template entrypoint relative to the scaffolded file tree.
+public struct ScaffoldedTemplateBundle: Sendable {
+    public var spec: PackageSpec
+    public var entrypoint: String
+    public var files: [String: Data]
+    public init(spec: PackageSpec, entrypoint: String, files: [String: Data]) {
+        self.spec = spec
+        self.entrypoint = entrypoint
+        self.files = files
+    }
+}
+
 /// `typst init` equivalent (FR-5): copy `{package}/template/*` → destination.
 public struct TemplateScaffolder: Sendable {
     private let cache: PackageCacheManager
@@ -111,8 +124,9 @@ public struct TemplateScaffolder: Sendable {
         return Array(srcComps.dropFirst(rootComps.count)).joined(separator: "/")
     }
 
-    /// In-memory mode for FileWrapper / SwiftData hosts: returns `[relativePath: Data]`.
-    public func scaffoldInMemory(_ spec: PackageSpec) async throws -> [String: Data] {
+    /// In-memory mode for FileWrapper / SwiftData hosts: returns the scaffolded
+    /// files plus the manifest-declared template entrypoint relative to that tree.
+    public func scaffoldTemplateInMemory(_ spec: PackageSpec) async throws -> ScaffoldedTemplateBundle {
         let pkgDir: URL
         if await cache.isInstalled(spec) {
             pkgDir = await cache.packageDir(for: spec)
@@ -139,6 +153,13 @@ public struct TemplateScaffolder: Sendable {
                 out[rel] = try Data(contentsOf: src)
             }
         }
-        return out
+        return ScaffoldedTemplateBundle(spec: spec, entrypoint: template.entrypoint, files: out)
+    }
+
+    /// Legacy in-memory scaffold API. Prefer `scaffoldTemplateInMemory` so
+    /// callers do not have to guess which `.typ` file is the template entrypoint.
+    public func scaffoldInMemory(_ spec: PackageSpec) async throws -> [String: Data] {
+        let bundle = try await scaffoldTemplateInMemory(spec)
+        return bundle.files
     }
 }

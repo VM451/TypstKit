@@ -128,6 +128,26 @@ struct ScaffolderTests {
         #expect(FileManager.default.fileExists(atPath: dest.appending(path: "main.typ").path))
         try? FileManager.default.removeItem(at: root)
     }
+
+    @Test func scaffoldTemplateInMemoryReportsManifestEntrypoint() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: "tusk-test-\(UUID().uuidString)")
+        let pkgDir = root.appending(path: "preview/demo/1.0.0", directoryHint: .isDirectory)
+        let templateDir = pkgDir.appending(path: "template", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: templateDir, withIntermediateDirectories: true)
+        try "[package]\nname=\"demo\"\nversion=\"1.0.0\"\nentrypoint=\"lib.typ\"\n[template]\npath=\"template\"\nentrypoint=\"resume.typ\"\n".write(to: pkgDir.appending(path: "typst.toml"), atomically: true, encoding: .utf8)
+        try "coverletter".write(to: templateDir.appending(path: "coverletter.typ"), atomically: true, encoding: .utf8)
+        try "resume".write(to: templateDir.appending(path: "resume.typ"), atomically: true, encoding: .utf8)
+        let cache = PackageCacheManager(config: .init(storageRoot: root), registry: OfficialUniverseRegistry())
+        let scaffolder = TemplateScaffolder(cache: cache)
+        let spec = PackageSpec(namespace: .preview, name: "demo", version: SemanticVersion(1, 0, 0))
+
+        let bundle = try await scaffolder.scaffoldTemplateInMemory(spec)
+        #expect(bundle.entrypoint == "resume.typ")
+        #expect(bundle.files.keys.sorted() == ["coverletter.typ", "resume.typ"])
+        let legacyFiles = try await scaffolder.scaffoldInMemory(spec)
+        #expect(legacyFiles.keys.sorted() == bundle.files.keys.sorted())
+        try? FileManager.default.removeItem(at: root)
+    }
 }
 
 private struct FailingRegistry: TypstRegistryProvider, Sendable {

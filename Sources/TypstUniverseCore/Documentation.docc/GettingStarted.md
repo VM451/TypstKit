@@ -35,4 +35,4 @@ let project = try await universe.scaffoldTemplate(spec, to: newDocumentFolderURL
 print(project.entrypointURL) // e.g. …/main.typ
 ```
 
-`conflictPolicy` defaults to `.failIfNonEmpty`, matching the Typst CLI. Use `.createSubdirectory(named:)` or `.overwrite` for app-managed folders, or `scaffoldInMemory(_:)` for `FileWrapper` / SwiftData hosts.
+`conflictPolicy` defaults to `.failIfNonEmpty`, matching the Typst CLI. Use `.createSubdirectory(named:)` or `.overwrite` for app-managed folders. For `FileWrapper` / SwiftData hosts, use `scaffoldTemplateInMemory(_:)`; it returns the files plus the manifest-declared template entrypoint. `scaffoldInMemory(_:)` remains as the legacy files-only convenience API.

@@ -107,6 +107,10 @@ public actor TypstUniverseClient {
         try await scaffolder.scaffold(spec, to: destination, conflictPolicy: conflictPolicy)
     }
 
+    public func scaffoldTemplateInMemory(_ spec: PackageSpec) async throws -> ScaffoldedTemplateBundle {
+        try await scaffolder.scaffoldTemplateInMemory(spec)
+    }
+
     public func scaffoldInMemory(_ spec: PackageSpec) async throws -> [String: Data] {
         try await scaffolder.scaffoldInMemory(spec)
     }
