@@ -520,6 +520,9 @@ public struct Capabilities: OptionSet, Sendable, Hashable {
     public static let tagged = Capabilities(rawValue: 1 << 4)
     /// Cannot be labelled (upstream `Unlabellable` marker).
     public static let unlabellable = Capabilities(rawValue: 1 << 5)
+    /// Excluded from queries (upstream `Unqueriable` marker; queriable is
+    /// the default upstream, so this is the opt-out bit).
+    public static let unqueriable = Capabilities(rawValue: 1 << 6)
 }
 
 /// A field's metadata.
@@ -650,9 +653,9 @@ public struct Element: Sendable, Hashable {
     public var isTagged: Bool { can(.tagged) }
 
     /// Whether the element is excluded from queries.
-    /// Upstream keeps a dedicated vtable flag; the port maps it to the
-    /// absence of the `queriable` capability.
-    public var isUnqueriable: Bool { !can(.queriable) }
+    /// Port of upstream `Element::is_unqueriable` — `Unqueriable` is an
+    /// opt-out marker upstream, so this checks for the dedicated bit.
+    public var isUnqueriable: Bool { can(.unqueriable) }
 
     /// The selector matching all instances of this element.
     public func select() -> Selector { .elem(self, fields: nil) }

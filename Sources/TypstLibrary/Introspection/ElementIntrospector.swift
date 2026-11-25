@@ -100,7 +100,7 @@ public struct ElementIntrospector<P: Sendable>: Sendable {
         case let .location(location):
             output = getByLoc(location).map { [$0] } ?? []
         case let .label(label):
-            output = labels.get(label).map { getByIdx($0) } ?? []
+            output = labels.get(label).map { getByIdx($0) }
         case let .or(selectors):
             var set = Set<Int>()
             for sel in selectors {

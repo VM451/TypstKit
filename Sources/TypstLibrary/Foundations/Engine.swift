@@ -29,6 +29,17 @@ public struct Engine {
     /// back to the base location.
     public var measureLocation: ((Hash128, Location, Span) -> Location?)?
 
+    /// Performs an introspection on the introspector and returns its result.
+    ///
+    /// As a side effect, the introspection is stored in the sink for
+    /// convergence analysis. Port of `Engine::introspect` in
+    /// `introspection/convergence.rs` call sites (`engine.rs`).
+    public mutating func introspect<I: Introspect>(_ introspection: I) -> I.Output {
+        let output = introspection.introspect(&self, introspector)
+        sink.introspection(Introspection(introspection))
+        return output
+    }
+
     /// The standard library (convenience accessor over `world.library`).
     public var library: Library { world.library.value }
 
@@ -220,6 +231,16 @@ public final class Sink: @unchecked Sendable {
     /// Errors that are only promoted to fatal ones if they remain by the end
     /// of the introspection loop (upstream `Sink::delayed`).
     public private(set) var delayed: [SourceDiagnostic] = []
+    /// Introspections recorded during evaluation, for convergence analysis
+    /// (upstream `Sink::introspections`).
+    public private(set) var introspections: [Introspection] = []
+
+    /// Record an introspection.
+    /// Port of upstream `Sink::introspection`.
+    public func introspection(_ introspection: Introspection) {
+        introspections.append(introspection)
+    }
+
     public func warn(_ diagnostic: SourceDiagnostic) { diagnostics.append(diagnostic) }
     public func error(_ diagnostic: SourceDiagnostic) { diagnostics.append(diagnostic) }
 

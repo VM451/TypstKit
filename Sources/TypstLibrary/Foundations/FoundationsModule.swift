@@ -53,6 +53,7 @@ public func defineFoundations(_ global: Scope, inputs: Dict = Dict()) {
     defineModelElements(into: global)
     defineLayoutElements(into: global)
     defineVisualizeElements(into: global)
+    defineIntrospection(into: global)
 
     global.resetCategory()
 }

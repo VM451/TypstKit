@@ -273,7 +273,7 @@ public struct PlaceElem: NativeElement {
             FieldInfo(id: 5, name: "dy", settable: true),
             FieldInfo(id: 6, name: "body", required: true, settable: false, hasDefault: false),
         ],
-        capabilities: [.locatable, .tagged]
+        capabilities: [.locatable, .tagged, .unqueriable]
     )
 
     /// The placed content.
