@@ -347,7 +347,7 @@ func convertXML(_ node: XmlNode) -> Value {
         }
         var dict = Dict()
         dict.insert("namespace",
-                    el.namespace.map { Value.str(Str($0)) } ?? .none)
+                    el.namespace.map { Value.str(Str($0)) } ?? Value.none)
         dict.insert("tag", .str(Str(el.tag)))
         dict.insert("attrs", .dict(attrs))
         dict.insert("children", .array(children))

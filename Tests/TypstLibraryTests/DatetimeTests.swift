@@ -128,9 +128,9 @@ import TypstUtils
     }
 
     @Test func constructKinds() throws {
-        #expect(try dt(2023, 4, 29) == d(2023, 4, 29))
-        #expect(try tt(14, 26, 50) == tm(14, 26, 50))
-        #expect(try dt(2023, 4, 29, 14, 26, 50) == dtv(2023, 4, 29, 14, 26, 50))
+        #expect(dt(2023, 4, 29) == d(2023, 4, 29))
+        #expect(tt(14, 26, 50) == tm(14, 26, 50))
+        #expect(dt(2023, 4, 29, 14, 26, 50) == dtv(2023, 4, 29, 14, 26, 50))
     }
 
     // MARK: display

@@ -55,33 +55,37 @@ public enum SecureTarGzExtractor {
                 if rest.allSatisfy({ $0 == 0 }) { break }
                 continue
             }
-            guard let name = cString(header, 0, 100),
-                let modeStr = cString(header, 100, 8),
+            guard let modeStr = cString(header, 100, 8),
                 let sizeStr = cString(header, 124, 12),
                 let magic = cString(header, 257, 6)
             else { throw TypstUniverseError.archiveSecurityViolation(reason: "malformed header") }
             let typeflag = header[156]
-            let prefix = cString(header, 345, 155) ?? ""
             let size = Int(octal: sizeStr.trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0
-            var entryName = prefix.isEmpty ? name : "\(prefix)/\(name)"
             if typeflag == UInt8(ascii: "L") {
-                // GNU long name: data blocks hold the real name.
-                var longData = Data()
-                var remaining = size
-                while remaining > 0 {
-                    let chunk = try read(min(512, remaining + (512 - remaining % 512) % 512 > 0 && remaining < 512 ? 512 : 512))
-                    _ = chunk
-                    remaining -= 512
-                    break
-                }
-                // Re-read properly: size rounded up to 512.
-                // (Simplest: we already consumed one 512 window above only when size<=512;
-                // for larger, loop.)
-                // To keep code small, handle common single-block case:
-                pendingLongName = cString(longData, 0, longData.count)
+                // GNU long name: data blocks hold the real name, padded to
+                // a 512-byte boundary like every other tar payload.
+                let padded = (size + 511) / 512 * 512
+                let longData = size > 0 ? try read(padded).prefix(size) : Data()
+                pendingLongName = cString(Data(longData), 0, longData.count)
                 continue
             }
-            if pendingLongName != nil { entryName = pendingLongName!; pendingLongName = nil }
+            var entryName: String
+            if let longName = pendingLongName {
+                entryName = longName
+                pendingLongName = nil
+            } else {
+                guard let nameBytes = cBytes(header, 0, 100) else {
+                    throw TypstUniverseError.archiveSecurityViolation(reason: "malformed header")
+                }
+                let prefixBytes = cBytes(header, 345, 155) ?? []
+                let combined = prefixBytes.isEmpty
+                    ? nameBytes
+                    : prefixBytes + [UInt8(ascii: "/")] + nameBytes
+                guard let decoded = String(bytes: combined, encoding: .utf8) else {
+                    throw TypstUniverseError.archiveSecurityViolation(reason: "malformed header")
+                }
+                entryName = decoded
+            }
             _ = pendingLongLink; pendingLongLink = nil
             _ = magic; _ = modeStr
             let dataSize = size
@@ -164,11 +168,16 @@ public enum SecureTarGzExtractor {
         return clean
     }
 
-    private static func cString(_ data: Data, _ off: Int, _ len: Int) -> String? {
+    private static func cBytes(_ data: Data, _ off: Int, _ len: Int) -> [UInt8]? {
         guard off + len <= data.count else { return nil }
         let slice = data[off..<off+len]
         let end = slice.firstIndex(of: 0) ?? slice.endIndex
-        return String(bytes: slice[..<end], encoding: .utf8)
+        return Array(slice[..<end])
+    }
+
+    private static func cString(_ data: Data, _ off: Int, _ len: Int) -> String? {
+        guard let bytes = cBytes(data, off, len) else { return nil }
+        return String(bytes: bytes, encoding: .utf8)
     }
 }
 

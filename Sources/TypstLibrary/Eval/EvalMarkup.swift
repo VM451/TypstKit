@@ -47,7 +47,7 @@ func evalMarkupStream(_ vm: inout Vm, _ exprs: [Expr],
                     }
                     seq[pos] = seq[pos].labelled(label)
                 } else {
-                    var warning = SourceDiagnostic.warning(
+                    let warning = SourceDiagnostic.warning(
                         expr.span,
                         "label `\(label.resolved)` is not attached to anything")
                     vm.engine.sink.warn(warning)

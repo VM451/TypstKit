@@ -356,7 +356,7 @@ private func vmlCheckboxes(_ root: XmlElement, out: inout SheetCheckboxes) {
 
 /// The (row, col) an `x:Anchor` starts in: `LeftColumn, LeftOffset, TopRow, TopOffset, ...`.
 private func anchorCell(_ anchor: String) -> (UInt32, UInt32)? {
-    var parts = anchor.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+    let parts = anchor.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
     guard parts.count >= 3,
           let col = UInt32(parts[0]), let row = UInt32(parts[2]) else { return nil }
     return (row, col)

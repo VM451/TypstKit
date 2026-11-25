@@ -30,7 +30,7 @@ struct SysTests {
     }
 
     @Test func defineFoundationsRegistersSys() {
-        var scope = Scope()
+        let scope = Scope()
         defineFoundations(scope)
         guard let binding = scope.get("sys"),
               case .module(let sys) = binding.value else {
@@ -45,7 +45,7 @@ struct SysTests {
     @Test func defineFoundationsPassesInputs() {
         var inputs = Dict()
         inputs.insert("answer", .str(Str("42")))
-        var scope = Scope()
+        let scope = Scope()
         defineFoundations(scope, inputs: inputs)
         guard let binding = scope.get("sys"),
               case .module(let sys) = binding.value else {

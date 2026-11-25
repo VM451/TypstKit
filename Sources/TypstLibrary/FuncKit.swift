@@ -128,7 +128,7 @@ func sourceFailure<T>(_ error: any Error, span: Span) -> SourceResult<T> {
 /// Build `NativeFuncData` from a throwing Swift body.
 ///
 /// Convenience for functions returning a specific `IntoValue` type.
-func nativeFunc<T: IntoValue & Castable>(
+func nativeFunc<T: IntoValue & Castable & Sendable>(
     _ name: String,
     title: String? = nil,
     since: Since? = nil,

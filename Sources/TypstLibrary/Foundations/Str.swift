@@ -504,7 +504,7 @@ func capturesToDict(_ m: RegexMatch) -> Dict {
     dict.insert("end", .int(Int64(m.range.upperBound)))
     dict.insert("text", .str(Str(m.text)))
     dict.insert("captures", .array(ArrayValue(items: m.captureTexts.map {
-        $0.map { .str(Str($0)) } ?? .none
+        $0.map { .str(Str($0)) } ?? Value.none
     })))
     return dict
 }

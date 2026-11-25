@@ -357,7 +357,7 @@ func verdict(_ s: RealizeState, _ elem: Content,
     var elem = elem
     if !prepared && elem.isSynthesizing {
         var slot = elem
-        try? slot.trySynthesizeElement(engine: &s.engine, styles: styles)
+        slot.trySynthesizeElement(engine: &s.engine, styles: styles)
         elem = slot
     }
 

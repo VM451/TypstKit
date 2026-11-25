@@ -17,7 +17,7 @@ struct MockWorld: World {
 
     init(files: [FileId: Bytes] = [:],
          sources: [FileId: String] = [:]) {
-        var scope = Scope()
+        let scope = Scope()
         defineFoundations(scope)
         let rules = NativeRuleMap()
         defineNativeRules(rules)

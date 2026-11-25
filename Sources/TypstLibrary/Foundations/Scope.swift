@@ -530,7 +530,7 @@ public struct Scopes {
     /// reports `cannot mutate a constant` / `unknown variable`.
     public mutating func getMut<T>(
         _ name: String,
-        span: Span,
+        span _: Span,
         guard access: any BindingGuard,
         _ body: (inout Value) throws -> T
     ) -> HintedStrResult<T> {
@@ -561,7 +561,6 @@ public struct Scopes {
             return .failure(cannotMutateConstant(name))
         }
         return .failure(unknownVariable(name))
-        _ = span
     }
 }
 

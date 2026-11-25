@@ -413,7 +413,7 @@ public struct RefElem: NativeElement {
                 case let .content(c): return .content(c)
                 case let .function(f): return .function(f)
                 }
-            case .custom(nil): return .none
+            case .custom(nil): return Value.none
             }
         case 2: return form.intoValue()
         case 3: return citation.map { .content(Content($0)) }
@@ -517,7 +517,7 @@ public struct HeadingElem: NativeElement {
         case 0: return level.isAuto ? .auto : .int(Int64(level.custom() ?? 1))
         case 1: return .int(Int64(depth))
         case 2: return .int(Int64(offset))
-        case 3: return numbering?.intoValue() ?? .none
+        case 3: return numbering?.intoValue() ?? Value.none
         case 4: return .str(numbers)
         case 5:
             switch supplement.value {
@@ -527,7 +527,7 @@ public struct HeadingElem: NativeElement {
                 case let .content(c): return .content(c)
                 case let .function(f): return .function(f)
                 }
-            case .custom(nil): return .none
+            case .custom(nil): return Value.none
             }
         case 6: return .bool(outlined)
         case 7:

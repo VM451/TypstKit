@@ -49,7 +49,7 @@ struct NumberPattern: Equatable {
 /// references, everything else literal).
 func parsePercentPattern(_ text: String) -> [NumberText] {
     var out: [NumberText] = []
-    var chars = Array(text)
+    let chars = Array(text)
     var i = 0
     while i < chars.count {
         let c = chars[i]
@@ -60,7 +60,7 @@ func parsePercentPattern(_ text: String) -> [NumberText] {
             continue
         }
         switch out.last {
-        case .literal(var s)?:
+        case .literal(let s)?:
             out[out.count - 1] = .literal(s + String(c))
         default:
             out.append(.literal(String(c)))

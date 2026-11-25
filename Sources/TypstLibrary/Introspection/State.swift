@@ -78,7 +78,7 @@ let stateConstruct = nativeFunc(
     returns: State.output
 ) { _, _, args in
     let key: Str = try args.expectT("key")
-    let initial: Value = try args.eatT() ?? .none
+    let initial: Value = try args.eatT() ?? Value.none
     try args.finishT()
     return State(key: key, initial: initial)
 }

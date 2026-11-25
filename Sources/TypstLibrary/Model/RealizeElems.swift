@@ -320,7 +320,7 @@ public struct PagebreakElem: NativeElement {
     public func field(_ id: UInt8) -> Value? {
         switch id {
         case 0: return .bool(weak)
-        case 1: return to.map { .str(Str($0.rawValue)) } ?? .none
+        case 1: return to.map { .str(Str($0.rawValue)) } ?? Value.none
         case 2: return .bool(boundary)
         default: return nil
         }
@@ -860,8 +860,8 @@ public struct CiteElem: NativeElement {
     public func field(_ id: UInt8) -> Value? {
         switch id {
         case 0: return .label(key)
-        case 1: return supplement.map { .content($0) } ?? .none
-        case 2: return form.map { .str(Str($0.rawValue)) } ?? .none
+        case 1: return supplement.map { .content($0) } ?? Value.none
+        case 2: return form.map { .str(Str($0.rawValue)) } ?? Value.none
         default: return nil
         }
     }
@@ -970,14 +970,14 @@ public struct DocumentElem: NativeElement {
 
     public func field(_ id: UInt8) -> Value? {
         switch id {
-        case 0: return title.map { .content($0) } ?? .none
+        case 0: return title.map { .content($0) } ?? Value.none
         case 1: return .array(ArrayValue(author.map { .str($0) }))
-        case 2: return description.map { .content($0) } ?? .none
+        case 2: return description.map { .content($0) } ?? Value.none
         case 3: return .array(ArrayValue(keywords.map { .str($0) }))
         case 4:
             switch date {
             case .auto: return .auto
-            case let .custom(d): return d.map { .datetime($0) } ?? .none
+            case let .custom(d): return d.map { .datetime($0) } ?? Value.none
             }
         case 5: return .content(body)
         case 6:

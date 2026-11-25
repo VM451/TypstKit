@@ -33,7 +33,7 @@ struct SynthesizeTests {
 
     @Test func supplementResolveContent() throws {
         let supp = Supplement.content(TextElem.packed("lit"))
-        var h = FuncHarness()
+        let h = FuncHarness()
         let resolved = try supp.resolve(
             engine: &h.engine, styles: StyleChain(), args: []).get()
         #expect(resolved.plainText.contains("lit"))
@@ -53,7 +53,7 @@ struct SynthesizeTests {
             try args.finishT()
             return Value.int(Int64(target.plainText.count))
         })
-        var h = FuncHarness()
+        let h = FuncHarness()
         let resolved = try Supplement.function(f).resolve(
             engine: &h.engine, styles: StyleChain(),
             args: [TextElem.packed("abc").intoValue()]).get()
@@ -105,7 +105,7 @@ struct SynthesizeTests {
     // MARK: - Heading synthesize
 
     @Test func headingSynthesizeAutoSupplement() throws {
-        var h = FuncHarness()
+        let h = FuncHarness()
         var heading = HeadingElem(body: TextElem.packed("x"))
         try heading.synthesize(
             engine: &h.engine, styles: StyleChain(), location: nil)
@@ -121,7 +121,7 @@ struct SynthesizeTests {
     }
 
     @Test func headingSynthesizeCustomSupplement() throws {
-        var h = FuncHarness()
+        let h = FuncHarness()
         var heading = HeadingElem(body: TextElem.packed("x"))
         heading.supplement = Spanned(
             .custom(.content(TextElem.packed("Kapittel"))), span: .detached)
@@ -141,7 +141,7 @@ struct SynthesizeTests {
         let location = loc(10)
         var located = heading.pack()
         located.location = location
-        var h = FuncHarness()
+        let h = FuncHarness()
         h.engine.introspector = introspector([located])
         try heading.synthesize(
             engine: &h.engine, styles: StyleChain(), location: location)
@@ -151,7 +151,7 @@ struct SynthesizeTests {
     }
 
     @Test func headingSynthesizeUnnumberedNoNumbers() throws {
-        var h = FuncHarness()
+        let h = FuncHarness()
         var heading = HeadingElem(body: TextElem.packed("x"))
         try heading.synthesize(
             engine: &h.engine, styles: StyleChain(), location: loc(10))
@@ -161,7 +161,7 @@ struct SynthesizeTests {
     // MARK: - Figure synthesize
 
     @Test func figureSynthesizeTableKind() throws {
-        var h = FuncHarness()
+        let h = FuncHarness()
         var fig = FigureElem(body: try nestedTable())
         fig.caption = FigureCaption(body: TextElem.packed("cap"))
         try fig.synthesize(
@@ -186,7 +186,7 @@ struct SynthesizeTests {
     }
 
     @Test func figureSynthesizeNoFigurableFallback() throws {
-        var h = FuncHarness()
+        let h = FuncHarness()
         var fig = FigureElem(body: TextElem.packed("plain"))
         try fig.synthesize(
             engine: &h.engine, styles: StyleChain(), location: nil)
@@ -201,7 +201,7 @@ struct SynthesizeTests {
     @Test func figureSynthesizeNumberedUnnamedKindErrors() throws {
         // Custom-name kinds have no local name; numbered figures then
         // require an explicit supplement.
-        var h = FuncHarness()
+        let h = FuncHarness()
         var fig = FigureElem(body: TextElem.packed("x"))
         fig.kind = .custom(.name(Str("custom")))
         #expect(throws: (any Error).self) {
@@ -211,7 +211,7 @@ struct SynthesizeTests {
     }
 
     @Test func figureSynthesizeUnnumberedUnnamedOk() throws {
-        var h = FuncHarness()
+        let h = FuncHarness()
         var fig = FigureElem(body: TextElem.packed("x"))
         fig.kind = .custom(.name(Str("custom")))
         fig.numbering = nil
@@ -225,7 +225,7 @@ struct SynthesizeTests {
     }
 
     @Test func figureCaptionSynthesizeSeparator() throws {
-        var h = FuncHarness()
+        let h = FuncHarness()
         var caption = FigureCaption(body: TextElem.packed("c"))
         try caption.synthesize(
             engine: &h.engine, styles: StyleChain(), location: nil)
@@ -239,7 +239,7 @@ struct SynthesizeTests {
 
     @Test func contentSynthesizeElement() throws {
         // The Content-level entry point passes the location through.
-        var h = FuncHarness()
+        let h = FuncHarness()
         var content = HeadingElem(body: TextElem.packed("x")).pack()
         content.location = loc(7)
         try content.synthesizeElement(

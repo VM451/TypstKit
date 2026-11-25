@@ -19,7 +19,7 @@ enum LatexFormat {
             body = stripped[...]
         }
 
-        var parser = LatexParser()
+        let parser = LatexParser()
         let title = extractCmdArg(preamble, "\\title") ?? extractCmdArg(String(body), "\\title")
         if let t = title {
             let inlines = parser.parseInlines(t, style: .plain)

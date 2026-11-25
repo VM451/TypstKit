@@ -84,16 +84,16 @@ public struct FigureElem: NativeElement {
     public func field(_ id: UInt8) -> Value? {
         switch id {
         case 0: return .content(body)
-        case 1: return alt.map { .str($0) } ?? .none
+        case 1: return alt.map { .str($0) } ?? Value.none
         case 2:
-            guard let placement else { return .none }
+            guard let placement else { return Value.none }
             if placement.isAuto { return .auto }
-            return placement.custom()?.intoValue() ?? .none
+            return placement.custom()?.intoValue() ?? Value.none
         case 3: return scope.intoValue()
-        case 4: return caption.map { .content(Content($0)) } ?? .none
+        case 4: return caption.map { .content(Content($0)) } ?? Value.none
         case 5:
             if kind.isAuto { return .auto }
-            return kind.custom().map { $0.intoValue() } ?? .none
+            return kind.custom().map { $0.intoValue() } ?? Value.none
         case 6:
             switch supplement {
             case .auto: return .auto
@@ -102,12 +102,12 @@ public struct FigureElem: NativeElement {
                 case let .content(c): return .content(c)
                 case let .function(f): return .function(f)
                 }
-            case .custom(nil): return .none
+            case .custom(nil): return Value.none
             }
-        case 7: return numbering?.intoValue() ?? .none
+        case 7: return numbering?.intoValue() ?? Value.none
         case 8: return .length(gap)
         case 9: return .bool(outlined)
-        case 10: return counter?.intoValue() ?? .none
+        case 10: return counter?.intoValue() ?? Value.none
         default: return nil
         }
     }
@@ -267,13 +267,13 @@ public struct FigureCaption: NativeElement {
         case 0: return position.intoValue()
         case 1:
             if separator.isAuto { return .auto }
-            return separator.custom().map { .content($0) } ?? .none
+            return separator.custom().map { .content($0) } ?? Value.none
         case 2: return .content(body)
-        case 3: return kind?.intoValue() ?? .none
-        case 4: return supplement.map { .content($0) } ?? .none
-        case 5: return numbering?.intoValue() ?? .none
-        case 6: return .none // Location has no Value representation
-        case 7: return counter?.intoValue() ?? .none
+        case 3: return kind?.intoValue() ?? Value.none
+        case 4: return supplement.map { .content($0) } ?? Value.none
+        case 5: return numbering?.intoValue() ?? Value.none
+        case 6: return nil // Location has no Value representation
+        case 7: return counter?.intoValue() ?? Value.none
         default: return nil
         }
     }

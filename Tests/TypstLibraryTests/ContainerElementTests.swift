@@ -55,6 +55,16 @@ struct ContainerElementTests {
         #expect(box2.clip == true)
     }
 
+    @Test func unsetBoxFillReadsInheritedStyle() throws {
+        let paint = Paint.solid(.red)
+        var styles = Styles()
+        styles.append(Property(
+            elem: Element(BoxElem.self), field: 3, value: paint.intoValue()))
+        let result = Content(BoxElem()).get(
+            3, styles: StyleChain.new(root: styles))
+        #expect(try result.get() == paint.intoValue())
+    }
+
     @Test func boxInsetDictCast() throws {
         // `x` feeds left/right only; `y` feeds top/bottom; unspecified → nil.
         let content = try markup("#box(inset: (left: 1pt, x: 2pt, y: 3pt))[x]")

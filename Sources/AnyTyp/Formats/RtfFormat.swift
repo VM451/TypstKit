@@ -15,7 +15,7 @@ enum RtfFormat {
         // scan the header for \ansicpg first.
         let defaultEncoding = scanCodepage(bytes)
         let prelude = parseRtfPrelude(bytes, defaultEncoding: defaultEncoding)
-        var parser = Parser(bytes: bytes, prelude: prelude, defaultEncoding: defaultEncoding)
+        let parser = Parser(bytes: bytes, prelude: prelude, defaultEncoding: defaultEncoding)
         do {
             try parser.run()
             return .success(try parser.finish())
@@ -356,7 +356,8 @@ private func parseRtfStylesheet(
             }
             nameBytes = []
             depth = max(depth - 1, 0)
-        case .hex(let b), .byte(let b) where depth == 1 && current != nil:
+        case .hex(let b) where depth == 1 && current != nil,
+             .byte(let b) where depth == 1 && current != nil:
             nameBytes.append(b)
         case .word(let word, let param):
             switch word {
@@ -572,7 +573,8 @@ private func parseRtfOverrides(
                 if levelIndex < rtfListLevels, let n = param {
                     starts[levelIndex] = UInt64(max(n, 0))
                 }
-            case "levelnfc", "levelnfcn" where lfoDepth != nil:
+            case "levelnfc" where lfoDepth != nil,
+                 "levelnfcn" where lfoDepth != nil:
                 if levelIndex < rtfListLevels {
                     markers[levelIndex] = .some(rtfMarkerForNfc(param ?? 0))
                 }
@@ -657,7 +659,7 @@ private final class RtfCounters {
         let level = min(level, rtfListLevels - 1)
         let def = levels[level]
         let value = next(ls, level: level, start: def.start)
-        var (values, started) = state[ls] ?? ([UInt64](repeating: 0, count: rtfListLevels), [Bool](repeating: false, count: rtfListLevels))
+        let (values, started) = state[ls] ?? ([UInt64](repeating: 0, count: rtfListLevels), [Bool](repeating: false, count: rtfListLevels))
         let label = def.marker.flatMap { marker in
             compositeLabel(
                 def.pattern, ownMarker: marker, ownValue: value,

@@ -243,7 +243,7 @@ extension CastInfo {
 }
 
 /// An uninhabitable type.
-public enum Never: Castable, IntoValue, FromValue {
+public enum Never: Castable, IntoValue, FromValue, Sendable {
     public static var input: CastInfo { .union([]) }
     public static var output: CastInfo { .union([]) }
     public static func castable(_ value: Value) -> Bool { false }

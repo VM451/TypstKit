@@ -46,7 +46,7 @@ public struct TitleElem: NativeElement {
         switch id {
         case 0:
             if body.isAuto { return .auto }
-            return body.custom().map { .content($0) } ?? .none
+            return body.custom().map { .content($0) } ?? Value.none
         default: return nil
         }
     }

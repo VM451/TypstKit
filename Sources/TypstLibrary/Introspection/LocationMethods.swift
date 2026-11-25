@@ -159,7 +159,7 @@ struct PageNumberingIntrospection: Introspect, Hashable {
             what: "numberings",
             formatKind: { "numbering of the page on which the \($0) is located" },
             formatOutput: { numbering in
-                "`\((numbering?.intoValue() ?? .none).repr())`"
+                "`\((numbering?.intoValue() ?? Value.none).repr())`"
             })
     }
 }

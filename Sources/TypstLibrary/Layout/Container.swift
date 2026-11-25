@@ -274,13 +274,13 @@ public struct BoxElem: NativeElement {
         case 0: return width.intoValue()
         case 1: return height.intoValue()
         case 2: return baseline.intoValue()
-        case 3: return fill?.intoValue() ?? .none
+        case 3: return fill?.intoValue()
         case 4: return stroke.intoValue()
         case 5: return radius.intoValue()
         case 6: return inset.intoValue()
         case 7: return outset.intoValue()
         case 8: return .bool(clip)
-        case 9: return body?.intoValue() ?? .none
+        case 9: return body?.intoValue() ?? Value.none
         default: return nil
         }
     }
@@ -421,7 +421,7 @@ public struct BlockElem: NativeElement {
         case 0: return width.intoValue()
         case 1: return height.intoValue()
         case 2: return .bool(breakable)
-        case 3: return fill?.intoValue() ?? .none
+        case 3: return fill?.intoValue()
         case 4: return stroke.intoValue()
         case 5: return radius.intoValue()
         case 6: return inset.intoValue()
@@ -430,7 +430,7 @@ public struct BlockElem: NativeElement {
         case 9: return below.intoValue()
         case 10: return .bool(clip)
         case 11: return .bool(sticky)
-        case 12: return body?.intoValue() ?? .none
+        case 12: return body?.intoValue() ?? Value.none
         default: return nil
         }
     }

@@ -666,7 +666,7 @@ public struct Element: Sendable, Hashable {
     public func settableFieldAccessor(_ name: String) -> ((StyleChain) -> Value)? {
         guard let id = fieldID(name), let info = field(id), info.settable
         else { return nil }
-        return { chain in chain.get(self, id) ?? .none }
+        return { chain in chain.get(self, id) ?? Value.none }
     }
 
     /// Whether the element has the capability.
